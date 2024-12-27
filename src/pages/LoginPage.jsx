@@ -1,127 +1,99 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSun, faMoon } from "@fortawesome/free-solid-svg-icons";
-import "../styles/Common.css";
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Box, Card, CardContent, TextField, Typography } from '@mui/material';
+import CustomButton from '../components/CustomButton';
 
 const LoginPage = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [errors, setErrors] = useState({});
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({ username: '', password: '' });
+  const [generalError, setGeneralError] = useState('');
 
-  useEffect(() => {
-    const savedMode = localStorage.getItem("dark-mode");
-    if (savedMode === "true") {
-      setIsDarkMode(true);
-      document.body.classList.add("dark-mode");
-    }
-  }, []);
-
-  const handleLogin = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const tempErrors = {};
 
+    // Reset errors
+    setFieldErrors({ username: '', password: '' });
+    setGeneralError('');
+
+    // 1. Check if username is provided
     if (!username) {
-      tempErrors.username = "Please enter your username.";
-    }
-    if (!password) {
-      tempErrors.password = "Please enter your password.";
-    }
-    if (username && password && (username !== "admin" || password !== "password")) {
-      tempErrors.username = "Incorrect username or password.";
-    }
-
-    setErrors(tempErrors);
-
-    // Spusti "shake" animáciu
-    if (Object.keys(tempErrors).length > 0) {
-      triggerShakeAnimation("username", tempErrors.username);
-      triggerShakeAnimation("password", tempErrors.password);
+      setFieldErrors({ username: 'Username is required', password: '' });
       return;
     }
 
-    localStorage.setItem("isAuthenticated", "true");
-    navigate("/dashboard");
-  };
+    // 2. Check if password is provided
+    if (!password) {
+      setFieldErrors({ username: '', password: 'Password is required' });
+      return;
+    }
 
-  const triggerShakeAnimation = (fieldId, error) => {
-    const field = document.getElementById(fieldId);
-    if (field && error) {
-      field.classList.remove("error-input");
-      void field.offsetWidth; // Resetovanie animácie
-      field.classList.add("error-input");
+    try {
+      await login(username, password); // Call the login function from AuthContext
+      navigate('/dashboard'); // Redirect to dashboard on success
+    } catch (err) {
+      // Handle different types of errors based on the backend response
+      if (err.response?.data.message === 'Username does not exist') {
+        setGeneralError('Username does not exist');
+        setFieldErrors({ username: 'Username does not exist', password: '' });
+      } else if (err.response?.data.message === 'Incorrect password') {
+        setGeneralError('Incorrect password');
+        setFieldErrors({ username: '', password: 'Incorrect password' });
+      } else {
+        setGeneralError('An unexpected error occurred. Please try again later.');
+      }
     }
   };
 
-  const toggleTheme = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    localStorage.setItem("dark-mode", newMode);
-    document.body.classList.toggle("dark-mode", newMode);
-  };
-
   return (
-    <div className="container">
-      {/* Dark Mode Switch */}
-      <div
-        style={{
-          position: "absolute",
-          top: "1rem",
-          right: "1rem",
-          cursor: "pointer",
-        }}
-        onClick={toggleTheme}
-      >
-        <FontAwesomeIcon
-          icon={isDarkMode ? faSun : faMoon}
-          size="2x"
-          style={{ color: isDarkMode ? "#f5f5f5" : "#e20074" }}
-        />
-      </div>
-
-      <div className="card">
-        <h1>vMatrix Login</h1>
-        <form onSubmit={handleLogin}>
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            type="text"
-            placeholder="Enter your username"
-            className="input"
-            value={username}
-            onChange={(e) => {
-              setUsername(e.target.value);
-              setErrors((prev) => ({ ...prev, username: "" }));
-            }}
-          />
-          {errors.username && <p className="error-message">{errors.username}</p>}
-
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            placeholder="Enter your password"
-            className="input"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setErrors((prev) => ({ ...prev, password: "" }));
-            }}
-          />
-          {errors.password && <p className="error-message">{errors.password}</p>}
-
-          <button className="button" type="submit">
-            Login
-          </button>
-        </form>
-
-        <a href="/forgot-password" className="link">
-          Forgot Password?
-        </a>
-      </div>
-    </div>
+    <Box className="page-container">
+      <Card className="card">
+        <Box className="card-header" />
+        <CardContent>
+          <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 2 }}>
+            vMatrix Login
+          </Typography>
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="Username"
+              variant="outlined"
+              margin="normal"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              error={!!fieldErrors.username}
+              helperText={fieldErrors.username}
+            />
+            <TextField
+              fullWidth
+              label="Password"
+              type="password"
+              variant="outlined"
+              margin="normal"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password}
+            />
+            {generalError && (
+              <Typography color="error" variant="body2" sx={{ marginTop: '5px', marginBottom: '5px' }}>
+              </Typography>
+            )}
+            <CustomButton type="submit">Login</CustomButton>
+          </form>
+          <CustomButton
+            variant="outlined"
+            href="/forgot-password"
+            sx={{ marginTop: 2 }}
+          >
+            Forgot your password?
+          </CustomButton>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 

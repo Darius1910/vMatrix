@@ -1,69 +1,50 @@
-import React, { useState } from "react";
-import "../styles/Common.css";
+import React, { useState } from 'react';
+import { Box, Card, CardContent, TextField, Typography } from '@mui/material';
+import CustomButton from '../components/CustomButton';
 
 const ForgotPasswordPage = () => {
-  const [email, setEmail] = useState("");
-  const [errors, setErrors] = useState({});
+  const [email, setEmail] = useState('');
+  const [fieldError, setFieldError] = useState('');
 
-  const handleReset = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const tempErrors = {};
+    setFieldError('');
 
     if (!email) {
-      tempErrors.email = "Please enter your email address.";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      tempErrors.email = "Please enter a valid email address.";
+      setFieldError('Email is required');
+      return;
     }
 
-    setErrors(tempErrors);
-
-    // Ak neexistujú chyby, vykonajte reset hesla (tu len simulujeme úspešnú akciu)
-    if (Object.keys(tempErrors).length === 0) {
-      alert("Password reset link has been sent to your email.");
-      setEmail("");
-    } else {
-      triggerShakeAnimation("email", tempErrors.email);
-    }
-  };
-
-  const triggerShakeAnimation = (fieldId, error) => {
-    const field = document.getElementById(fieldId);
-    if (field && error) {
-      field.classList.remove("error-input");
-      void field.offsetWidth; // Resetovanie animácie
-      field.classList.add("error-input");
-    }
+    // Logic for password reset (Send email)
   };
 
   return (
-    <div className="container">
-      <div className="card">
-        <h1>Forgot Password</h1>
-        <form onSubmit={handleReset}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            placeholder="Enter your email address"
-            className="input"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setErrors((prev) => ({ ...prev, email: "" }));
-            }}
-          />
-          {errors.email && <p className="error-message">{errors.email}</p>}
-
-          <button className="button" type="submit">
+    <Box className="page-container">
+      <Card className="card">
+        <Box className="card-header" />
+        <CardContent>
+          <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 2 }}>
             Reset Password
-          </button>
-        </form>
-
-        <a href="/" className="link">
-          Back to Login
-        </a>
-      </div>
-    </div>
+          </Typography>
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="Email"
+              variant="outlined"
+              margin="normal"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={!!fieldError}
+              helperText={fieldError}
+            />
+            <CustomButton type="submit">Send Reset Link</CustomButton>
+          </form>
+          <CustomButton variant="outlined" href="/login" sx={{ marginTop: 2 }}>
+            Back to Login
+          </CustomButton>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 
