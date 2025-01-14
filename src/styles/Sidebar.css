@@ -1,0 +1,124 @@
+/* Root Variables for Light Mode */
+:root {
+    --primary-color: #e20074;
+    --background-color: #ffffff;
+    --text-color: #000000;
+    --border-color: #ddd;
+    --hover-color: #c0005e;
+    --menu-background-color: #ffffff;
+    --menu-text-color: #000000;
+  }
+  
+  /* Dark Mode Variables */
+  body[data-theme='dark'] {
+    --primary-color: #c0005e;
+    --background-color: #1e1e1e;
+    --text-color: #ffffff;
+    --border-color: #333;
+    --hover-color: #e20074;
+    --menu-background-color: #333;
+    --menu-text-color: #ffffff;
+  }
+
+
+  /* Sidebar Container */
+  .sidebar-container {
+    width: 300px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 10px;
+    border-right: 1px solid var(--border-color);
+  }
+  
+  /* Header Section */
+  .sidebar-header {
+    font-size: 2rem !important;
+    font-weight: bold;
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif !important;
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  
+  .sidebar-divider {
+    margin: 16px 0;
+    border-color: var(--border-color);
+  }
+  
+  /* Footer Section */
+.sidebar-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  /* User Name */
+  .user-name {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--text-color);
+  }
+  
+  /* Footer Menu Button */
+  .footer-menu-button {
+    color: var(--text-color);
+    transition: color 0.3s ease;
+  }
+  
+  .footer-menu-button:hover {
+    color: var(--primary-color);
+  }
+  
+/* Footer Dropdown Menu */
+.footer-dropdown-menu .MuiPaper-root {
+    background-color: var(--menu-background-color);
+    color: var(--menu-text-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    
+}
+
+/* Dropdown Menu Items */
+.footer-dropdown-menu .footer-menu-item {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Menu Item Content */
+.footer-dropdown-menu .menu-item-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Ensure switch and text are properly spaced */
+    gap: 5px;
+}
+
+/* Menu Icon */
+.footer-dropdown-menu .menu-icon {
+    font-size: 1.25rem; /* Consistent icon size */
+    color: var(--menu-text-color);
+}
+
+/* Menu Text */
+.footer-dropdown-menu .menu-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--menu-text-color);
+}
+
+/* Dark Mode Switch */
+.footer-dropdown-menu .darkmode-switch {
+    transform: scale(0.9); /* Slightly smaller for balance */
+}
+
+.footer-dropdown-menu .darkmode-switch .MuiSwitch-thumb {
+    background-color: var(--primary-color) !important;
+}
+
+.footer-dropdown-menu .darkmode-switch .MuiSwitch-track {
+    background-color: #e02460 !important;
+}

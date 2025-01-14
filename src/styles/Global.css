@@ -5,7 +5,7 @@
   min-height: 100vh;
   background-image: 
     url('https://www.transparenttextures.com/patterns/cubes.png'), /* Example noise texture */
-    linear-gradient(45deg, #f5f5f5 25%, #ffffff 75%);
+    linear-gradient(45deg, rgb(180, 180, 180) 50%, rgb(180, 180, 180) 45%);
   background-size: auto, cover;
   background-position: top left, center;
   background-repeat: repeat, no-repeat;

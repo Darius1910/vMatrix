@@ -34,6 +34,11 @@ export const ThemeProvider = ({ children }) => {
   const isPublicPage = ['/forgot-password', '/', '/notfound'].includes(location.pathname);
 
   useEffect(() => {
+    document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+  
+
+  useEffect(() => {
     if (user && !isPublicPage) {
       const fetchSession = async () => {
         try {

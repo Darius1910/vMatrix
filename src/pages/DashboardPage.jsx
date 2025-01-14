@@ -1,57 +1,50 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Card, CardContent, Typography, Switch, FormControlLabel } from '@mui/material';
-import CustomButton from '../components/CustomButton';
-import Loader from '../components/Loader'; // Import the Loader component
+import React, { useState, useEffect } from 'react';
+import ReactFlow, { Background, Controls } from 'reactflow';
+import 'reactflow/dist/style.css';
+import Sidebar from '../components/Sidebar';
 import { useTheme } from '../context/ThemeProvider';
-import { useAuth } from '../context/AuthContext';
+import '../styles/DashboardPage.css';
 
 const DashboardPage = () => {
-  const navigate = useNavigate();
-  const { isDarkMode, toggleTheme } = useTheme();
-  const { logout } = useAuth();
-  const [loading, setLoading] = useState(false); // State for showing the loader
+  const { isDarkMode } = useTheme();
+  const [filters, setFilters] = useState([
+    { id: 'filter1', label: 'Filter 1', checked: false },
+    { id: 'filter2', label: 'Filter 2', checked: false },
+  ]);
 
-  const handleLogout = async () => {
-    setLoading(true); // Show the loader during logout
-    try {
-      await logout(); // Call logout function from AuthContext
-      navigate('/'); // Redirect to login page
-    } catch (error) {
-      console.error('Logout failed:', error); // Log errors for debugging
-    } finally {
-      setLoading(false); // Hide the loader after logout
-    }
+  const [elements, setElements] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/src/data/data.json');
+        const data = await response.json();
+        setElements(data);
+      } catch (error) {
+        console.error('Failed to load topology data:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const toggleFilter = (id) => {
+    setFilters((prevFilters) =>
+      prevFilters.map((filter) =>
+        filter.id === id ? { ...filter, checked: !filter.checked } : filter
+      )
+    );
   };
 
-  if (loading) {
-    return <Loader />; // Show loader during loading
-  }
-
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        backgroundColor: isDarkMode ? '#121212' : '#ffffff',
-      }}
-    >
-      <Card sx={{ maxWidth: 400, padding: 4, borderRadius: 2, boxShadow: 4, position: 'relative' }}>
-        <CardContent>
-          <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 2 }}>
-            Welcome to Dashboard
-          </Typography>
-          <FormControlLabel
-            control={<Switch checked={isDarkMode} onChange={toggleTheme} />}
-            label="Dark Mode"
-            sx={{ marginBottom: 2 }}
-          />
-          <CustomButton onClick={handleLogout}>Logout</CustomButton>
-        </CardContent>
-      </Card>
-    </Box>
+    <div className={`dashboard-container ${isDarkMode ? 'dark-mode' : ''}`}>
+      <Sidebar filters={filters} setFilters={toggleFilter} />
+      <div className={`canvas-container ${isDarkMode ? 'dark-mode' : ''}`}>
+        <ReactFlow elements={elements} className="reactflow-canvas">
+          <Background /> {/* Default ReactFlow Background */}
+          <Controls />
+        </ReactFlow>
+      </div>
+    </div>
   );
 };
 
