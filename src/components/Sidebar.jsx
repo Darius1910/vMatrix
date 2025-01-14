@@ -1,3 +1,4 @@
+// Sidebar.jsx (Frontend)
 import React from 'react';
 import {
   Box,
@@ -10,12 +11,12 @@ import {
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeProvider';
+import { useAuth } from '../context/AuthContext'; // Use AuthContext to get the user
+import { useTheme } from '../context/ThemeProvider'; // For dark mode handling
 import '../styles/Sidebar.css';
 
 const Sidebar = ({ filters, setFilters }) => {
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // Access the user from AuthContext
   const { isDarkMode, toggleTheme } = useTheme();
   const [anchorEl, setAnchorEl] = React.useState(null);
 
@@ -39,6 +40,7 @@ const Sidebar = ({ filters, setFilters }) => {
       <Box>
         <Divider className="sidebar-divider" />
         <Box className="sidebar-footer">
+          {/* Displaying username */}
           <Typography className="user-name">{user?.username || 'Guest'}</Typography>
           <IconButton
             onClick={handleMenuOpen}

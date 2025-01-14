@@ -14,9 +14,10 @@ export const login = async (username, password) => {
 
 // Kontrola autentifikácie
 export const checkAuth = async () => {
-  const response = await api.get('/auth/check');
-  return response.data;
+  const response = await api.get('/session/me');  // Get user session (including username)
+  return response.data;  // Return the session data (which includes username)
 };
+
 
 // Získanie session
 export const getSession = async () => {

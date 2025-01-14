@@ -11,8 +11,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const session = await checkAuth();
-        setUser(session);
+        const session = await checkAuth(); // This should fetch user session (including username)
+        setUser(session);  // Store username and other session data
       } catch {
         setUser(null);
       } finally {
@@ -20,22 +20,22 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    initializeAuth();
+    initializeAuth();  // Fetch user data after the component mounts
   }, []);
 
   const loginHandler = async (username, password) => {
-    await apiLogin(username, password);
-    const session = await checkAuth();
-    setUser(session);
+    await apiLogin(username, password); // Call the backend login function
+    const session = await checkAuth();  // Fetch user session data (including username)
+    setUser(session);  // Set the session data (username) in context
   };
 
   const logoutHandler = async () => {
-    await apiLogout();
-    setUser(null);
+    await apiLogout(); // Call backend logout function
+    setUser(null); // Reset user state after logging out
   };
 
   if (loading) {
-    return <Loader />; // Show the loader while loading
+    return <Loader />;  // Display loader while loading user data
   }
 
   return (
