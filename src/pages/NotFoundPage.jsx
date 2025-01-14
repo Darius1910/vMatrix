@@ -8,10 +8,10 @@ const NotFoundPage = () => {
       <Card className="card">
         <Box className="card-header" />
         <CardContent>
-          <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 2 }}>
+          <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 3 }}>
             404 - Page Not Found
           </Typography>
-          <Typography variant="body1" color="textSecondary" sx={{ marginBottom: 3 }}>
+          <Typography variant="body1" color="primary" sx={{ marginBottom: 3 }}>
             The page you are looking for does not exist or has been moved.
           </Typography>
           <CustomButton variant="outlined" href="/">

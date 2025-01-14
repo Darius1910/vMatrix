@@ -39,7 +39,7 @@ const ForgotPasswordPage = () => {
             />
             <CustomButton type="submit">Send Reset Link</CustomButton>
           </form>
-          <CustomButton variant="outlined" href="/login" sx={{ marginTop: 2 }}>
+          <CustomButton variant="outlined" href="/" sx={{ marginTop: 2 }}>
             Back to Login
           </CustomButton>
         </CardContent>
