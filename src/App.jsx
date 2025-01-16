@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import NotFoundPage from './pages/NotFoundPage';
+import RegistrationPage from './pages/RegistrationPage';
 
 const App = () => {
   return (
@@ -37,6 +38,14 @@ const App = () => {
                 <ProtectedRoute>
                   <DashboardPage />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <RedirectIfAuthenticated>
+                  <RegistrationPage />
+                </RedirectIfAuthenticated>
               }
             />
             <Route path="*" element={<NotFoundPage />} />

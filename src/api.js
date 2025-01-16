@@ -12,6 +12,12 @@ export const login = async (username, password) => {
   return response.data;
 };
 
+// Registrácia
+export const registerUser = async (email, username, password) => {
+  const response = await axios.post('http://localhost:3000/auth/register', { email, username, password }, { withCredentials: true });
+  return response.data;
+};
+
 // Kontrola autentifikácie
 export const checkAuth = async () => {
   const response = await api.get('/session/me');  // Get user session (including username)

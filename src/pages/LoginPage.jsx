@@ -78,12 +78,15 @@ const LoginPage = () => {
               error={!!fieldErrors.password}
               helperText={fieldErrors.password}
             />
-            {generalError && (
-              <Typography color="error" variant="body2" sx={{ marginTop: '5px', marginBottom: '5px' }}>
-              </Typography>
-            )}
             <CustomButton type="submit">Login</CustomButton>
           </form>
+          <CustomButton
+            variant="outlined"
+            sx={{ marginTop: 2 }}
+            onClick={() => navigate('/register')}
+          >
+            Don’t have an account? Register here
+          </CustomButton>
           <CustomButton
             variant="outlined"
             href="/forgot-password"
