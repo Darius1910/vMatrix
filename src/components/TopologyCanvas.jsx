@@ -5,20 +5,19 @@ import ReactFlow, {
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 
-// Stronger colors for nodes
 const colorMap = {
-  vOrg: '#2196F3',      // Strong Blue
-  vDC: '#4CAF50',       // Strong Green
-  vApp: '#FFC107',      // Strong Yellow
-  VM: '#F44336',        // Strong Red
-  Network: '#9C27B0',   // Strong Purple
+  vOrg: '#2196F3',
+  vDC: '#4CAF50',
+  vApp: '#FFC107',
+  VM: '#F44336',
+  Network: '#9C27B0',
 };
 
-// Dagre layout function
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -41,92 +40,54 @@ const getLayoutedNodesAndEdges = (nodes, edges, direction = 'TB') => {
     node.targetPosition = isHorizontal ? 'left' : 'top';
     node.sourcePosition = isHorizontal ? 'right' : 'bottom';
 
-    // Update position
     node.position = {
-      x: nodeWithPosition.x - 75, // Centering node
-      y: nodeWithPosition.y - 25, // Centering node
+      x: nodeWithPosition.x - 75,
+      y: nodeWithPosition.y - 25,
     };
   });
 
   return { nodes, edges };
 };
 
-const TopologyCanvas = ({ data }) => {
+const TopologyCanvas = ({ topology, selectedNodes, isDarkMode }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const { fitView, getNodes } = useReactFlow(); // Access ReactFlow methods
 
   useEffect(() => {
-    if (!data) return;
+    if (!topology) return;
 
-    const { topology } = data;
     const newNodes = [];
     const newEdges = [];
 
-    // Add vOrg Nodes
-    topology.forEach((org, orgIndex) => {
-      const orgId = `org-${orgIndex}`;
-      const orgName = org.data[0]?.name || `vOrg-${orgIndex}`; // Correct vOrg name extraction
-      newNodes.push({
-        id: orgId,
-        type: 'default',
-        data: { label: orgName },
-        style: { backgroundColor: colorMap.vOrg },
-      });
-
-      // Add vDCs, vApps, VMs, and Networks
-      org.data[0]?.vdcs.forEach((vdc, vdcIndex) => {
-        const vdcId = `${orgId}-vdc-${vdcIndex}`;
+    const traverse = (node) => {
+      if (selectedNodes.includes(node.id)) {
         newNodes.push({
-          id: vdcId,
-          type: 'default',
-          data: { label: vdc.name },
-          style: { backgroundColor: colorMap.vDC },
+          id: node.id,
+          data: { label: node.label },
+          style: { backgroundColor: colorMap[node.type] },
         });
-        newEdges.push({ id: `${orgId}-${vdcId}`, source: orgId, target: vdcId });
-
-        vdc.vapps.forEach((vApp, vAppIndex) => {
-          const vAppId = `${vdcId}-vApp-${vAppIndex}`;
-          newNodes.push({
-            id: vAppId,
-            type: 'default',
-            data: { label: vApp.name },
-            style: { backgroundColor: colorMap.vApp },
-          });
-          newEdges.push({ id: `${vdcId}-${vAppId}`, source: vdcId, target: vAppId });
-
-          vApp.details.VirtualMachines.forEach((vm, vmIndex) => {
-            const vmId = `${vAppId}-vm-${vmIndex}`;
-            newNodes.push({
-              id: vmId,
-              type: 'default',
-              data: { label: vm.name },
-              style: { backgroundColor: colorMap.VM },
-            });
-            newEdges.push({ id: `${vAppId}-${vmId}`, source: vAppId, target: vmId });
-
-            vm.networks.forEach((network, networkIndex) => {
-              const networkId = `${vmId}-network-${networkIndex}`;
-              newNodes.push({
-                id: networkId,
-                type: 'default',
-                data: { label: network.networkName },
-                style: { backgroundColor: colorMap.Network },
-              });
-              newEdges.push({
-                id: `${vmId}-${networkId}`,
-                source: vmId,
-                target: networkId,
-              });
-            });
-          });
+        node.children?.forEach((child) => {
+          newEdges.push({ id: `${node.id}-${child.id}`, source: node.id, target: child.id });
+          traverse(child);
         });
-      });
-    });
+      }
+    };
+
+    topology.forEach(traverse);
 
     const layouted = getLayoutedNodesAndEdges(newNodes, newEdges);
     setNodes(layouted.nodes);
     setEdges(layouted.edges);
-  }, [data]);
+
+    // Fit view after ensuring nodes are rendered
+    setTimeout(() => {
+      const renderedNodes = getNodes();
+      if (renderedNodes.length) {
+        fitView({ padding: 0.3, duration: 500 }); // Smooth zoom with enough padding
+      }
+    }, 100); // Small delay to ensure all nodes are rendered
+  }, [topology, selectedNodes, fitView, getNodes]);
 
   return (
     <div style={{ position: 'relative', height: '100%' }}>
@@ -135,14 +96,15 @@ const TopologyCanvas = ({ data }) => {
         style={{
           position: 'absolute',
           top: 10,
-          left: 10,
-          backgroundColor: 'rgba(250, 250, 250, 0.95)',
+          right: 10,
+          backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+          color: isDarkMode ? '#fff' : '#000',
           padding: '10px 15px',
           borderRadius: '8px',
           boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
-          zIndex: 10,
           fontFamily: 'Arial, sans-serif',
-          textAlign: 'center',
+          fontSize: '0.875rem',
+          zIndex: 10,
         }}
       >
         <strong
@@ -150,7 +112,6 @@ const TopologyCanvas = ({ data }) => {
             display: 'block',
             marginBottom: '10px',
             fontSize: '14px',
-            color: '#000',
           }}
         >
           Legend
@@ -165,7 +126,11 @@ const TopologyCanvas = ({ data }) => {
           ].map(({ label, color }) => (
             <div
               key={label}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
             >
               <div
                 style={{
@@ -175,7 +140,7 @@ const TopologyCanvas = ({ data }) => {
                   backgroundColor: color,
                 }}
               ></div>
-              <span style={{ fontSize: '12px', color: '#333' }}>{label}</span>
+              <span>{label}</span>
             </div>
           ))}
         </div>
@@ -190,7 +155,7 @@ const TopologyCanvas = ({ data }) => {
       >
         <Background />
         <MiniMap />
-        <Controls />
+        <Controls /> {/* Includes Fit View button */}
       </ReactFlow>
     </div>
   );
