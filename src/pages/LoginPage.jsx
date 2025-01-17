@@ -85,7 +85,7 @@ const LoginPage = () => {
             sx={{ marginTop: 2 }}
             onClick={() => navigate('/register')}
           >
-            Don’t have an account? Register here
+            Don’t have an account? Register here!
           </CustomButton>
           <CustomButton
             variant="outlined"

@@ -149,7 +149,7 @@ const RegistrationPage = () => {
             sx={{ marginTop: 2 }}
             onClick={() => navigate('/')}
           >
-            Already have an account? Login
+            Already have an account? Login!
           </CustomButton>
         </CardContent>
       </Card>
