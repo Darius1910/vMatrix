@@ -1,48 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import ReactFlow, { Background, Controls } from 'reactflow';
-import 'reactflow/dist/style.css';
+import React, { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
+import TopologyCanvas from '../components/TopologyCanvas';
 import { useTheme } from '../context/ThemeProvider';
 import '../styles/DashboardPage.css';
 
 const DashboardPage = () => {
   const { isDarkMode } = useTheme();
-  const [filters, setFilters] = useState([
-    { id: 'filter1', label: 'Filter 1', checked: false },
-    { id: 'filter2', label: 'Filter 2', checked: false },
-  ]);
-
-  const [elements, setElements] = useState([]);
+  const [topologyData, setTopologyData] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch('/src/data/data.json');
         const data = await response.json();
-        setElements(data);
+        setTopologyData(data);
       } catch (error) {
-        console.error('Failed to load topology data:', error);
+        console.error('Failed to fetch topology data:', error);
       }
     };
     fetchData();
   }, []);
 
-  const toggleFilter = (id) => {
-    setFilters((prevFilters) =>
-      prevFilters.map((filter) =>
-        filter.id === id ? { ...filter, checked: !filter.checked } : filter
-      )
-    );
-  };
-
   return (
     <div className={`dashboard-container ${isDarkMode ? 'dark-mode' : ''}`}>
-      <Sidebar filters={filters} setFilters={toggleFilter} />
-      <div className={`canvas-container ${isDarkMode ? 'dark-mode' : ''}`}>
-        <ReactFlow elements={elements} className="reactflow-canvas">
-          <Background /> {/* Default ReactFlow Background */}
-          <Controls />
-        </ReactFlow>
+      <Sidebar />
+      <div className="canvas-container">
+        {topologyData ? (
+          <TopologyCanvas data={topologyData} />
+        ) : (
+          <p>Loading topology...</p>
+        )}
       </div>
     </div>
   );
