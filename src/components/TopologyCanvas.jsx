@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -9,85 +9,126 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
+import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
+import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
+import LaptopOutlinedIcon from '@mui/icons-material/LaptopOutlined';
+import NetworkCheckOutlinedIcon from '@mui/icons-material/NetworkCheckOutlined';
 
-const colorMap = {
-  vOrg: '#2196F3',
-  vDC: '#4CAF50',
-  vApp: '#FFC107',
-  VM: '#F44336',
-  Network: '#9C27B0',
+// Definícia farieb a ikon pre legendu
+const typeIcons = {
+  vOrg: <CloudOutlinedIcon />,
+  vDC: <StorageOutlinedIcon />,
+  vApp: <AppsOutlinedIcon />,
+  VM: <LaptopOutlinedIcon />,
+  Network: <NetworkCheckOutlinedIcon />,
 };
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
+const typeColors = {
+  vOrg: '#2196F3', // Blue
+  vDC: '#4CAF50', // Green
+  vApp: '#FFC107', // Yellow
+  VM: '#F44336', // Red
+  Network: '#9C27B0', // Purple
+};
 
-const getLayoutedNodesAndEdges = (nodes, edges, direction = 'TB') => {
-  const isHorizontal = direction === 'LR';
-  dagreGraph.setGraph({ rankdir: direction });
+// Funkcia na aplikovanie Dagre Layout
+const getDagreLayoutedNodesAndEdges = (nodes, edges, direction = 'TB') => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
 
+  // Nastavenie smeru a medzier
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 50, ranksep: 100 });
+
+  // Pridanie nodov do Dagre grafu
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: 150, height: 50 });
   });
 
+  // Pridanie hrán do Dagre grafu
   edges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
   });
 
+  // Vypočítanie layoutu pomocou Dagre
   dagre.layout(dagreGraph);
 
-  nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.targetPosition = isHorizontal ? 'left' : 'top';
-    node.sourcePosition = isHorizontal ? 'right' : 'bottom';
-
-    node.position = {
-      x: nodeWithPosition.x - 75,
-      y: nodeWithPosition.y - 25,
+  // Uloženie pozícií z Dagre do React Flow nodov
+  const layoutedNodes = nodes.map((node) => {
+    const { x, y } = dagreGraph.node(node.id);
+    return {
+      ...node,
+      position: { x, y },
+      targetPosition: 'top',
+      sourcePosition: 'bottom',
     };
   });
 
-  return { nodes, edges };
+  return { nodes: layoutedNodes, edges };
 };
 
-const TopologyCanvas = ({ topology, selectedNodes, isDarkMode }) => {
+const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { fitView, getNodes } = useReactFlow(); // Access ReactFlow methods
+  const { fitView, getViewport } = useReactFlow();
 
-  useEffect(() => {
-    if (!topology) return;
+  const rebuildTopology = () => {
+    // Reset nodes and edges completely
+    setNodes([]);
+    setEdges([]);
+
+    if (!topology || selectedNodes.length === 0) {
+      fitView({ padding: 0.3 });
+      return;
+    }
 
     const newNodes = [];
     const newEdges = [];
 
-    const traverse = (node) => {
+    const traverseTopology = (node) => {
       if (selectedNodes.includes(node.id)) {
         newNodes.push({
           id: node.id,
           data: { label: node.label },
-          style: { backgroundColor: colorMap[node.type] },
+          style: { backgroundColor: typeColors[node.type] || '#cccccc' }, // Nastaviť farbu podľa typu
+          position: { x: 0, y: 0 }, // Resetovať pozíciu
         });
+
         node.children?.forEach((child) => {
-          newEdges.push({ id: `${node.id}-${child.id}`, source: node.id, target: child.id });
-          traverse(child);
+          if (selectedNodes.includes(child.id)) {
+            newEdges.push({
+              id: `${node.id}-${child.id}`,
+              source: node.id,
+              target: child.id,
+              type: 'smoothstep', // Typ hrany
+            });
+          }
+          traverseTopology(child);
         });
       }
     };
 
-    topology.forEach(traverse);
+    topology.forEach(traverseTopology);
 
-    const layouted = getLayoutedNodesAndEdges(newNodes, newEdges);
-    setNodes(layouted.nodes);
-    setEdges(layouted.edges);
+    // Použiť Dagre layout na výpočet pozícií
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayoutedNodesAndEdges(newNodes, newEdges);
 
-    // Fit view after ensuring nodes are rendered
-    setTimeout(() => {
-      const renderedNodes = getNodes();
-      if (renderedNodes.length) {
-        fitView({ padding: 0.3, duration: 500 }); // Smooth zoom with enough padding
-      }
-    }, 100); // Small delay to ensure all nodes are rendered
-  }, [topology, selectedNodes, fitView, getNodes]);
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+
+    // Center the view
+    setTimeout(() => fitView({ padding: 0.3 }), 100);
+  };
+
+  const handleNodesChange = (changes) => {
+    const isLocked = getViewport()?.locked;
+    if (isLocked) return; // Ak je zámok aktívny, ignorujeme presuny nodov
+    onNodesChange(changes);
+  };
+
+  useEffect(() => {
+    rebuildTopology();
+  }, [topology, selectedNodes]);
 
   return (
     <div style={{ position: 'relative', height: '100%' }}>
@@ -96,7 +137,7 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode }) => {
         style={{
           position: 'absolute',
           top: 10,
-          right: 10,
+          left: 10,
           backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
           color: isDarkMode ? '#fff' : '#000',
           padding: '10px 15px',
@@ -104,58 +145,52 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode }) => {
           boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
           fontFamily: 'Arial, sans-serif',
           fontSize: '0.875rem',
+          textAlign: 'center',
           zIndex: 10,
         }}
       >
-        <strong
-          style={{
-            display: 'block',
-            marginBottom: '10px',
-            fontSize: '14px',
-          }}
-        >
+        <strong style={{ display: 'block', marginBottom: '10px', fontSize: '14px' }}>
           Legend
         </strong>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          {[
-            { label: 'vOrg', color: colorMap.vOrg },
-            { label: 'vDC', color: colorMap.vDC },
-            { label: 'vApp', color: colorMap.vApp },
-            { label: 'VM', color: colorMap.VM },
-            { label: 'Network', color: colorMap.Network },
-          ].map(({ label, color }) => (
+          {Object.entries(typeIcons).map(([type, Icon]) => (
             <div
-              key={label}
+              key={type}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
-              <div
+              <span
                 style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  backgroundColor: color,
+                  color: typeColors[type], // Zafarbenie ikony farbou typu
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '18px',
                 }}
-              ></div>
-              <span>{label}</span>
+              >
+                {Icon}
+              </span>
+              <span>{type}</span>
             </div>
           ))}
         </div>
       </div>
-      {/* ReactFlow Canvas */}
+
+      {/* Canvas */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange} // Použitie našej funkcie na kontrolu presúvania
         onEdgesChange={onEdgesChange}
         fitView
+        minZoom={0.1} // Minimálne oddialenie
+        maxZoom={2} // Maximálne priblíženie
       >
         <Background />
         <MiniMap />
-        <Controls /> {/* Includes Fit View button */}
+        <Controls />
       </ReactFlow>
     </div>
   );
