@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ReactFlowProvider } from 'reactflow'; // Import ReactFlowProvider
+import { ReactFlowProvider } from 'reactflow';
 import Sidebar from '../components/Sidebar';
 import TopologyCanvas from '../components/TopologyCanvas';
 import '../styles/DashboardPage.css';
@@ -24,21 +24,35 @@ const DashboardPage = () => {
               id: `org-${index}-vdc-${vdcIndex}`,
               label: vdc.name,
               type: 'vDC',
-              children: vdc.vapps.map((vApp, vAppIndex) => ({
-                id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
-                label: vApp.name,
-                type: 'vApp',
-                children: vApp.details.VirtualMachines.map((vm, vmIndex) => ({
-                  id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
-                  label: vm.name,
-                  type: 'VM',
-                  children: vm.networks.map((network, networkIndex) => ({
-                    id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}`,
-                    label: network.networkName,
-                    type: 'Network',
+              children: [
+                ...(vdc.vapps.map((vApp, vAppIndex) => ({
+                  id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
+                  label: vApp.name,
+                  type: 'vApp',
+                  children: vApp.details.VirtualMachines.map((vm, vmIndex) => ({
+                    id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
+                    label: vm.name,
+                    type: 'VM',
+                    children: vm.networks.map((network, networkIndex) => ({
+                      id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}`,
+                      label: network.networkName,
+                      type: 'Network',
+                      children: network.edgeGateway
+                        ? [{
+                          id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}-edgeGateway`,
+                          label: network.edgeGateway.edgeGatewayName || 'Edge Gateway',
+                          type: 'EdgeGateway',
+                        }]
+                        : [],
+                    })),
                   })),
+                }))),
+                ...(vdc.edgeGateways || []).map((edgeGateway, edgeGatewayIndex) => ({
+                  id: `org-${index}-vdc-${vdcIndex}-edgeGateway-${edgeGatewayIndex}`,
+                  label: edgeGateway.edgeGatewayName || `Edge Gateway ${edgeGatewayIndex}`,
+                  type: 'EdgeGateway',
                 })),
-              })),
+              ],
             })),
           }));
         };
@@ -59,7 +73,6 @@ const DashboardPage = () => {
         setSelectedNodes={setSelectedNodes}
       />
       <div className="canvas-container" style={{ flexGrow: 1 }}>
-        {/* Wrap TopologyCanvas with ReactFlowProvider */}
         <ReactFlowProvider>
           <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} />
         </ReactFlowProvider>

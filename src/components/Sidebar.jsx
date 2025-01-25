@@ -4,9 +4,6 @@ import {
   Typography,
   Divider,
   IconButton,
-  Menu,
-  MenuItem,
-  Switch,
   Checkbox,
   List,
   ListItem,
@@ -14,12 +11,13 @@ import {
   ListItemIcon,
   Collapse,
 } from '@mui/material';
-import { ExpandLess, ExpandMore, SettingsOutlined, LogoutOutlined } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, SettingsOutlined } from '@mui/icons-material';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
 import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
 import LaptopOutlinedIcon from '@mui/icons-material/LaptopOutlined';
 import NetworkCheckOutlinedIcon from '@mui/icons-material/NetworkCheckOutlined';
+import RouterOutlinedIcon from '@mui/icons-material/RouterOutlined'; // Edge Gateway Icon
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeProvider';
 import '../styles/Sidebar.css';
@@ -30,30 +28,23 @@ const typeIcons = {
   vApp: <AppsOutlinedIcon />,
   VM: <LaptopOutlinedIcon />,
   Network: <NetworkCheckOutlinedIcon />,
+  EdgeGateway: <RouterOutlinedIcon />,
 };
 
 const typeColors = {
-  vOrg: '#2196F3', // Blue
-  vDC: '#4CAF50', // Green
-  vApp: '#FFC107', // Yellow
-  VM: '#F44336', // Red
-  Network: '#9C27B0', // Purple
+  vOrg: '#2196F3',
+  vDC: '#4CAF50',
+  vApp: '#FFC107',
+  VM: '#F44336',
+  Network: '#9C27B0',
+  EdgeGateway: '#607D8B',
 };
 
 const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
-  const { user, logout } = useAuth();
-  const { isDarkMode, toggleTheme } = useTheme();
-  const [anchorEl, setAnchorEl] = useState(null);
+  const { user } = useAuth();
+  const { isDarkMode } = useTheme();
   const [expanded, setExpanded] = useState({});
-  const [sidebarWidth, setSidebarWidth] = useState(400); // Initial sidebar width
-
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const [sidebarWidth, setSidebarWidth] = useState(500);
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -71,13 +62,31 @@ const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
     });
   };
 
+  const handleSelectAllChange = (isChecked) => {
+    if (isChecked) {
+      const collectAllNodeIds = (nodes) => {
+        let ids = [];
+        nodes.forEach((node) => {
+          ids.push(node.id);
+          if (node.children) {
+            ids = ids.concat(collectAllNodeIds(node.children));
+          }
+        });
+        return ids;
+      };
+      setSelectedNodes(collectAllNodeIds(topology));
+    } else {
+      setSelectedNodes([]);
+    }
+  };
+
   const renderTree = (nodes = [], level = 0) => {
     return nodes.map((node) => {
       const nodeId = node.id;
       const isExpanded = expanded[nodeId] || false;
       const children = node.children || [];
       const icon = typeIcons[node.type] || null;
-      const color = typeColors[node.type] || '#000'; // Default to black if type is unknown
+      const color = typeColors[node.type] || '#000';
 
       return (
         <Box key={nodeId} sx={{ marginLeft: `${level * 15}px` }}>
@@ -98,7 +107,7 @@ const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
               primary={node.label}
               sx={{
                 fontSize: '0.875rem',
-                color: isDarkMode ? '#fff' : '#333', // Dynamic text color
+                color: isDarkMode ? '#fff' : '#333',
               }}
             />
             {children.length > 0 && (
@@ -119,7 +128,6 @@ const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
     });
   };
 
-  // Handle resizing the sidebar
   const handleMouseDown = (e) => {
     e.preventDefault();
     document.addEventListener('mousemove', handleMouseMove);
@@ -127,7 +135,7 @@ const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
   };
 
   const handleMouseMove = (e) => {
-    const newWidth = Math.min(Math.max(e.clientX, 200), 600); // Horizontal resizing limits
+    const newWidth = Math.min(Math.max(e.clientX, 200), 600);
     setSidebarWidth(newWidth);
   };
 
@@ -136,88 +144,110 @@ const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
     document.removeEventListener('mouseup', handleMouseUp);
   };
 
+  // Check if all nodes are selected
+  const collectAllNodeIds = (nodes) => {
+    let ids = [];
+    nodes.forEach((node) => {
+      ids.push(node.id);
+      if (node.children) {
+        ids = ids.concat(collectAllNodeIds(node.children));
+      }
+    });
+    return ids;
+  };
+
+  const allNodeIds = collectAllNodeIds(topology);
+  const areAllSelected = selectedNodes.length > 0 && selectedNodes.length === allNodeIds.length;
+
   return (
     <Box
       className="sidebar-container"
       style={{
         width: `${sidebarWidth}px`,
         height: '100vh',
-        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
         borderRight: '1px solid rgba(0, 0, 0, 0.12)',
       }}
     >
-      {/* Header Section */}
+      {/* Header */}
       <Box>
         <Typography
           className="sidebar-header"
           sx={{
             fontWeight: 'bold',
             padding: '10px',
-            color: '#e02460', // Magenta color for "vMatrix"
+            color: '#e02460',
             textAlign: 'center',
           }}
         >
           vMatrix
         </Typography>
         <Divider className="sidebar-divider" />
-        {/* Topology Section */}
         <Typography
           variant="h6"
           sx={{
             padding: '10px 0',
-            color: isDarkMode ? '#fff' : '#333', // Dynamic text color
-            textAlign: 'center', // Center-align the title
+            color: isDarkMode ? '#fff' : '#333',
+            textAlign: 'center',
           }}
         >
           Topology Hierarchy
         </Typography>
-        <Box
-          className="custom-scrollbar"
-          style={{
-            overflowY: 'auto', // Vertical scrollbar only
-            overflowX: 'hidden', // Disable horizontal scrollbar
-            maxHeight: 'calc(100vh - 200px)', // Proper height adjustment
-            padding: '0 5px',
+
+        {/* "Select All" Checkbox */}
+        <Box sx={{ padding: '10px 20px' }}>
+          <Checkbox
+            checked={areAllSelected}
+            indeterminate={selectedNodes.length > 0 && selectedNodes.length < allNodeIds.length}
+            onChange={(e) => handleSelectAllChange(e.target.checked)}
+          />
+          <Typography variant="body2" sx={{ display: 'inline', marginLeft: '10px' }}>
+            Select All
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Main Content */}
+      <Box
+        className="custom-scrollbar"
+        style={{
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          flex: 1,
+          padding: '0 5px',
+        }}
+      >
+        <List>{renderTree(topology)}</List>
+      </Box>
+
+      {/* Footer */}
+      <Box
+        className="sidebar-footer"
+        sx={{
+          padding: '10px',
+          borderTop: '1px solid rgba(0, 0, 0, 0.12)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: '14px',
+            color: isDarkMode ? '#fff' : '#333',
           }}
         >
-          <List>{renderTree(topology)}</List>
-        </Box>
+          {user?.username || 'Guest'}
+        </Typography>
+        <IconButton>
+          <SettingsOutlined />
+        </IconButton>
       </Box>
 
-      {/* Footer Section */}
-      <Box>
-        <Divider className="sidebar-divider" />
-        <Box className="sidebar-footer" sx={{ padding: '10px' }}>
-          {/* Username */}
-          <Typography
-            className="user-name"
-            sx={{
-              fontSize: '14px',
-              color: isDarkMode ? '#fff' : '#333', // Dynamic text color
-            }}
-          >
-            {user?.username || 'Guest'}
-          </Typography>
-          <IconButton onClick={handleMenuOpen} className="footer-menu-button">
-            <SettingsOutlined />
-          </IconButton>
-          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-            <MenuItem>
-              <Typography>Dark Mode</Typography>
-              <Switch checked={isDarkMode} onChange={toggleTheme} />
-            </MenuItem>
-            <MenuItem onClick={logout}>
-              <LogoutOutlined />
-              <Typography>Logout</Typography>
-            </MenuItem>
-          </Menu>
-        </Box>
-      </Box>
-
-      {/* Resizable Drag Handle */}
+      {/* Resize Handle */}
       <Box
         onMouseDown={handleMouseDown}
         style={{
