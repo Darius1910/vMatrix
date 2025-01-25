@@ -4,6 +4,9 @@ import {
   Typography,
   Divider,
   IconButton,
+  Menu,
+  MenuItem,
+  Switch,
   Checkbox,
   List,
   ListItem,
@@ -11,7 +14,7 @@ import {
   ListItemIcon,
   Collapse,
 } from '@mui/material';
-import { ExpandLess, ExpandMore, SettingsOutlined } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, SettingsOutlined, LogoutOutlined } from '@mui/icons-material';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
 import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
@@ -41,10 +44,20 @@ const typeColors = {
 };
 
 const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
-  const { user } = useAuth();
-  const { isDarkMode } = useTheme();
+  const { user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [expanded, setExpanded] = useState({});
   const [sidebarWidth, setSidebarWidth] = useState(500);
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  // Dropdown menu handlers
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -222,7 +235,7 @@ const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
         <List>{renderTree(topology)}</List>
       </Box>
 
-      {/* Footer */}
+      {/* Footer with Dropdown */}
       <Box
         className="sidebar-footer"
         sx={{
@@ -242,9 +255,27 @@ const Sidebar = ({ topology, selectedNodes, setSelectedNodes }) => {
         >
           {user?.username || 'Guest'}
         </Typography>
-        <IconButton>
-          <SettingsOutlined />
-        </IconButton>
+        <Box>
+          <IconButton onClick={handleMenuOpen}>
+            <SettingsOutlined />
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem>
+              <Typography variant="body2">Dark Mode</Typography>
+              <Switch checked={isDarkMode} onChange={toggleTheme} />
+            </MenuItem>
+            <MenuItem onClick={logout}>
+              <LogoutOutlined />
+              <Typography variant="body2" sx={{ marginLeft: '10px' }}>
+                Logout
+              </Typography>
+            </MenuItem>
+          </Menu>
+        </Box>
       </Box>
 
       {/* Resize Handle */}
