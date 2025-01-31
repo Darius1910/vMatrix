@@ -35,8 +35,8 @@ const MainPage = () => {
         <Toolbar sx={{ minHeight: '64px', display: 'flex', justifyContent: 'space-between' }}>
           {/* Odkazy vľavo */}
           <Box display="flex" alignItems="center">
-            <Typography variant="h6" sx={{ mr: 2 }}>
-              Navbar
+            <Typography variant="h4" fontWeight="bold" sx={{ mr: 2 }}>
+              vMatrix
             </Typography>
             <Button color="inherit" component={Link} to="/main/dash">
               DashBoard
