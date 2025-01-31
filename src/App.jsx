@@ -9,6 +9,8 @@ import DashboardPage from './pages/DashboardPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RegistrationPage from './pages/RegistrationPage';
+import MainPage from './pages/MainPage';
+import CronJobManager from './pages/CronJobs';
 
 const App = () => {
   return (
@@ -16,9 +18,7 @@ const App = () => {
       <AuthProvider>
         <ThemeProvider>
           <Routes>
-            <Route
-              path="/"
-              element={
+            <Route path="/" element={
                 <RedirectIfAuthenticated>
                   <LoginPage />
                 </RedirectIfAuthenticated>
@@ -32,14 +32,11 @@ const App = () => {
                 </RedirectIfAuthenticated>
               }
             />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route path="/main" element={<ProtectedRoute><MainPage /></ProtectedRoute>} >
+          <Route path="cronJobs" element={<ProtectedRoute><CronJobManager /></ProtectedRoute>} />
+          <Route path="dash" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        
+        </Route>
             <Route
               path="/register"
               element={
@@ -57,3 +54,4 @@ const App = () => {
 };
 
 export default App;
+

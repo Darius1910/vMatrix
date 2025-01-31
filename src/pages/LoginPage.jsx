@@ -33,7 +33,7 @@ const LoginPage = () => {
 
     try {
       await login(username, password); // Call the login function from AuthContext
-      navigate('/dashboard'); // Redirect to dashboard on success
+      navigate('/main/dash'); // Redirect to dashboard on success
     } catch (err) {
       // Handle different types of errors based on the backend response
       if (err.response?.data.message === 'Username does not exist') {

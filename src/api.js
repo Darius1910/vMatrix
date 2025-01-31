@@ -36,8 +36,61 @@ export const updateSession = async (darkMode) => {
   return response.data;
 };
 
-// Odhlásenie
+
 export const logout = async () => {
   const response = await api.get('/auth/logout'); // Match the backend route
   return response.data;
 };
+
+
+export const addCronJob = async (name, topology) => {
+  const response = await api.post('/api/cron/add-cron-jobs', { name, topology });
+  return response.data;
+};
+// Body obsahuje:
+// {
+//   "name": "jobxyZ",
+//   "topology": [
+//        {
+//           "name": "testcustomer",
+//           "uuid": "15566d05-2741-4679-8892-ae00c911c699Neplatne"
+//       }
+//   ]
+// }
+
+export const deleteCronJob = async (jobId) => {
+  const response = await api.delete(`/api/cron/jobs/${jobId}`);
+  return response.data;
+};
+
+export const getCronJobs = async () => {
+  const response = await api.get('/api/cron/jobs');
+  return response.data;
+};
+
+export const addTopology = async (orgs) => {
+  const response = await api.post('/api/topology', { orgs });
+  return response.data;
+};
+// Body obsahuje:
+// {
+//   "orgs": [
+//     {
+//         "name": "testcustomer",
+//         "uuid": "15566d05-2741-4679-8892-ae00c911c699"
+//     }
+//   ]
+// }
+
+export const getOrgs = async () => {
+  const response = await api.get('/api/orgs');
+  return response.data;
+};
+
+export const updateNetworkData = async () => {
+  const response = await api.get('/api/updateNetworkData');
+  return response.data;
+};
+
+
+
