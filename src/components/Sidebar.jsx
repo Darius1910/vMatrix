@@ -20,8 +20,8 @@ import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
 import LaptopOutlinedIcon from '@mui/icons-material/LaptopOutlined';
 import NetworkCheckOutlinedIcon from '@mui/icons-material/NetworkCheckOutlined';
 import RouterOutlinedIcon from '@mui/icons-material/RouterOutlined';
-import Scrollbar from '../components/Scrollbar'; // Import vlastného scrollbar komponentu
-import { styled } from '@mui/system';
+import Scrollbar from '../components/Scrollbar';
+import { useTheme } from '@mui/material/styles';
 
 const drawerWidth = 300;
 
@@ -44,7 +44,8 @@ const typeColors = {
   EdgeGateway: '#455A64',
 };
 
-const Sidebar = ({ topology = [], selectedNodes, setSelectedNodes, sidebarVisible, setSidebarVisible }) => {
+const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible }) => {
+  const theme = useTheme(); // Dynamické farby témy
   const [expanded, setExpanded] = useState({});
 
   const toggleExpand = (id) => {
@@ -71,7 +72,7 @@ const Sidebar = ({ topology = [], selectedNodes, setSelectedNodes, sidebarVisibl
   };
 
   const handleCheckboxChange = (id, e) => {
-    setSelectedNodes((prev) => {
+    setSelectedNodes((prev = []) => {
       const newSelection = new Set(prev);
       if (e.target.checked) {
         newSelection.add(id);
@@ -84,13 +85,13 @@ const Sidebar = ({ topology = [], selectedNodes, setSelectedNodes, sidebarVisibl
 
   const renderTree = (nodes = [], level = 0, parentColor = null) => {
     return nodes.map((node) => {
-      if (!node || !node.id || !node.label) return null; // Ochrana pred nesprávnymi dátami
+      if (!node || !node.id || !node.label) return null;
 
       const nodeId = node.id;
       const isExpanded = expanded[nodeId] || false;
       const children = node.children || [];
       const IconComponent = typeIcons[node.type] || null;
-      const color = typeColors[node.type] || parentColor || '#ccc'; // Farba pre farebný pásik
+      const color = typeColors[node.type] || parentColor || theme.palette.text.primary;
 
       return (
         <Box key={nodeId}>
@@ -100,8 +101,8 @@ const Sidebar = ({ topology = [], selectedNodes, setSelectedNodes, sidebarVisibl
               display: 'flex',
               alignItems: 'center',
               width: '100%',
-              '&:hover': { backgroundColor: '#f5f5f5', borderRadius: '4px' },
-              borderLeft: level > 0 ? `4px solid ${color}` : 'none', // Pásik pre child elementy
+              '&:hover': { backgroundColor: theme.palette.action.hover, borderRadius: '4px' },
+              borderLeft: level > 0 ? `4px solid ${color}` : 'none',
               paddingLeft: level > 0 ? '8px' : '0px'
             }}
           >
@@ -109,7 +110,7 @@ const Sidebar = ({ topology = [], selectedNodes, setSelectedNodes, sidebarVisibl
               {IconComponent && <IconComponent sx={{ color, fontSize: 18 }} />}
             </ListItemIcon>
             <Checkbox
-              checked={selectedNodes.includes(nodeId)}
+              checked={Boolean(selectedNodes?.includes(nodeId))} // Zabráni undefined hodnote
               onChange={(e) => handleCheckboxChange(nodeId, e)}
               size="small"
             />
@@ -122,12 +123,13 @@ const Sidebar = ({ topology = [], selectedNodes, setSelectedNodes, sidebarVisibl
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   fontSize: '14px',
-                  fontWeight: children.length > 0 ? 'bold' : 'normal', // Parent bude tučný
+                  fontWeight: children.length > 0 ? 'bold' : 'normal',
+                  color: theme.palette.text.primary, // Dynamická farba textu
                 }}
               />
             </Tooltip>
             {children.length > 0 && (
-              <IconButton size="small" onClick={() => toggleExpand(nodeId)}>
+              <IconButton size="small" onClick={() => toggleExpand(nodeId)} color="inherit">
                 {isExpanded ? <ExpandLess /> : <ExpandMore />}
               </IconButton>
             )}
@@ -158,34 +160,34 @@ const Sidebar = ({ topology = [], selectedNodes, setSelectedNodes, sidebarVisibl
           padding: '10px',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#ffffff',
-          borderRight: '1px solid #ddd',
+          backgroundColor: theme.palette.background.paper, // Dynamická farba
+          borderRight: `1px solid ${theme.palette.divider}`, // Dynamická farba
         },
       }}
     >
-      {/* Header s názvom a tlačidlom */}
+      {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingX: 1 }}>
-        <Typography variant="h6" fontWeight="bold">
+        <Typography variant="h6" fontWeight="bold" color="text.primary">
           Topology Filter
         </Typography>
-        <IconButton onClick={() => setSidebarVisible(false)}>
+        <IconButton onClick={() => setSidebarVisible(false)} color="inherit">
           <ChevronLeft />
         </IconButton>
       </Box>
-      <Divider />
+      <Divider sx={{ backgroundColor: theme.palette.divider }} />
 
-      {/* Výber všetkých uzlov */}
+      {/* Select All Checkbox */}
       <Box sx={{ display: 'flex', alignItems: 'center', paddingX: 1, paddingY: 1 }}>
         <Checkbox
-          checked={selectedNodes.length > 0 && selectedNodes.length === collectAllNodeIds(topology).length}
-          indeterminate={selectedNodes.length > 0 && selectedNodes.length < collectAllNodeIds(topology).length}
+          checked={Boolean(selectedNodes.length > 0 && selectedNodes.length === collectAllNodeIds(topology).length)}
+          indeterminate={Boolean(selectedNodes.length > 0 && selectedNodes.length < collectAllNodeIds(topology).length)}
           onChange={handleSelectAllChange}
         />
-        <Typography variant="body2">Select All</Typography>
+        <Typography variant="body2" color="text.primary">Select All</Typography>
       </Box>
-      <Divider />
+      <Divider sx={{ backgroundColor: theme.palette.divider }} />
 
-      {/* Scrollovateľný zoznam topológie s vlastným scrollbarom */}
+      {/* Scrollovateľný zoznam */}
       <Scrollbar style={{ flexGrow: 1 }}>
         <List>{renderTree(topology)}</List>
       </Scrollbar>
