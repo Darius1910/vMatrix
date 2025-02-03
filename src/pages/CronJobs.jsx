@@ -1,8 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, Typography, Paper, List, ListItem, ListItemText, IconButton, CircularProgress, MenuItem, Select } from '@mui/material';
+import { 
+  Box, Button, TextField, Typography, Paper, List, ListItem, ListItemText, 
+  IconButton, CircularProgress, MenuItem 
+} from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import { getCronJobs, addCronJob, deleteCronJob, getOrgs } from '../api';
-import Scrollbar from '../components/Scrollbar'; // Používame nový scrollbar komponent
+import Scrollbar from '../components/Scrollbar'; // ✅ Custom Scrollbar Component
+import Autocomplete from '@mui/material/Autocomplete';
+import { styled } from '@mui/material/styles';
+
+// ✅ Custom Scrollbar Styling for Autocomplete
+const CustomAutocompleteList = styled('div')({
+  maxHeight: '200px', 
+  overflowY: 'auto',
+  '&::-webkit-scrollbar': {
+    width: '8px',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: '#e02460',
+    borderRadius: '10px',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    backgroundColor: '#d91b5c',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: 'rgba(0, 0, 0, 0.05)',
+  },
+});
 
 const CronJobManager = () => {
   const [jobs, setJobs] = useState([]); 
@@ -10,6 +34,7 @@ const CronJobManager = () => {
   const [orgs, setOrgs] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [orgLoading, setOrgLoading] = useState(true);
 
   useEffect(() => {
     fetchJobs();
@@ -20,13 +45,9 @@ const CronJobManager = () => {
     setLoading(true);
     try {
       const response = await getCronJobs();
-      if (response && Array.isArray(response.data)) { 
-        setJobs(response.data);
-      } else {
-        setJobs([]);
-      }
+      setJobs(response?.data || []);
     } catch (error) {
-      console.error("Chyba pri načítaní jobov:", error);
+      console.error("Error fetching cron jobs:", error);
       setJobs([]);
     } finally {
       setLoading(false);
@@ -34,23 +55,22 @@ const CronJobManager = () => {
   };
 
   const fetchOrgs = async () => {
+    setOrgLoading(true);
     try {
       const response = await getOrgs();
-      if (response && Array.isArray(response.data)) { 
-        setOrgs(response.data);
-      } else {
-        setOrgs([]);
-      }
+      setOrgs(response?.data || []);
     } catch (error) {
-      console.error("Chyba pri načítaní organizácií:", error);
+      console.error("Error fetching organizations:", error);
       setOrgs([]);
+    } finally {
+      setOrgLoading(false);
     }
   };
 
   const handleAddJob = async () => {
     if (!jobName.trim() || !selectedOrg) return;
 
-    const org = orgs.find(o => o.name === selectedOrg);
+    const org = orgs.find(o => o.name.toLowerCase() === selectedOrg.toLowerCase());
     if (!org) return;
 
     try {
@@ -59,7 +79,7 @@ const CronJobManager = () => {
       setJobName('');
       setSelectedOrg('');
     } catch (error) {
-      console.error("Chyba pri pridávaní jobu:", error);
+      console.error("Error adding cron job:", error);
     }
   };
 
@@ -68,7 +88,7 @@ const CronJobManager = () => {
       await deleteCronJob(jobId);
       fetchJobs(); 
     } catch (error) {
-      console.error("Chyba pri mazání jobu:", error);
+      console.error("Error deleting cron job:", error);
     }
   };
 
@@ -80,14 +100,14 @@ const CronJobManager = () => {
         <Box flex={1} borderRight="1px solid #ccc" pr={2} display="flex" flexDirection="column" height="100%">
           <Typography variant="h6" mb={1}>Cron Jobs</Typography>
 
-          {/* Scrollbar aplikovaný na zoznam jobov */}
+          {/* ✅ Custom Scrollbar for Job List */}
           <Scrollbar style={{ flex: 1, minHeight: 0, height: '100%' }}> 
             {loading ? (
               <CircularProgress />
             ) : (
               <List>
                 {jobs.length === 0 ? (
-                  <Typography color="textSecondary">Žiadne joby</Typography>
+                  <Typography color="textSecondary">No cron jobs available</Typography>
                 ) : (
                   jobs.map((job) => (
                     <ListItem key={job._id} secondaryAction={
@@ -97,7 +117,7 @@ const CronJobManager = () => {
                     }>
                       <ListItemText 
                         primary={job.name} 
-                        secondary={job.topology?.[0]?.name || "Žiadna organizácia"} 
+                        secondary={job.topology?.[0]?.name || "No organization assigned"} 
                       />
                     </ListItem>
                   ))
@@ -109,55 +129,55 @@ const CronJobManager = () => {
 
         {/* Right Side - Add Job Form */}
         <Box flex={1} pl={2} display="flex" flexDirection="column" justifyContent="center">
-          <Typography variant="h6" mb={1}>Ovládací Panel</Typography>
+          <Typography variant="h6" mb={1}>Control Panel</Typography>
+          
+          {/* Job Name Input */}
           <TextField 
-            label="Názov Jobu" 
+            label="Job Name" 
             variant="outlined" 
             fullWidth 
             value={jobName} 
             onChange={(e) => setJobName(e.target.value)} 
-            sx={{ mb: 1 }}
+            sx={{ mb: 2 }}
           />
 
-          {/* ✅ Scrollbar pre Select Menu */}
-          <Select
-            value={selectedOrg}
-            onChange={(e) => setSelectedOrg(e.target.value)}
-            displayEmpty
-            fullWidth
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  maxHeight: 300, // Výška menu
-                  overflowY: 'auto', // Povolenie scrollovania
-                  '&::-webkit-scrollbar': {
-                    width: '8px',
+          {/* Organization Input with Autocomplete + Custom Scrollbar */}
+          {orgLoading ? (
+            <CircularProgress sx={{ alignSelf: 'center', mb: 2 }} size={24} />
+          ) : (
+            <Autocomplete
+              freeSolo
+              options={orgs.map((org) => org.name) || []} // ✅ Ensuring it's always an array
+              value={selectedOrg}
+              onInputChange={(event, newValue) => setSelectedOrg(newValue)}
+              renderInput={(params) => (
+                <TextField {...params} label="Select or Type Organization" variant="outlined" fullWidth />
+              )}
+              sx={{ mb: 2 }}
+              PopperProps={{
+                modifiers: [
+                  {
+                    name: 'preventOverflow',
+                    options: {
+                      boundary: 'window',
+                    },
                   },
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: '#e02460',
-                    borderRadius: '10px',
-                  },
-                  '&::-webkit-scrollbar-thumb:hover': {
-                    backgroundColor: '#d91b5c',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: 'rgba(0, 0, 0, 0.05)',
-                  },
-                },
-              },
-            }}
-            sx={{ mb: 2 }}
-          >
-            <MenuItem value="" disabled>Vyber organizáciu</MenuItem>
-            {orgs.map((org) => (
-              <MenuItem key={org.uuid} value={org.name}>
-                {org.name}
-              </MenuItem>
-            ))}
-          </Select>
+                ],
+              }}
+              ListboxProps={{
+                component: CustomAutocompleteList, // ✅ Custom Scrollbar Applied
+              }}
+            />
+          )}
 
-          <Button variant="contained" color="primary" onClick={handleAddJob} fullWidth>
-            Pridať Job
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleAddJob} 
+            fullWidth
+            disabled={!jobName || !selectedOrg}
+          >
+            Add Job
           </Button>
         </Box>
       </Paper>
