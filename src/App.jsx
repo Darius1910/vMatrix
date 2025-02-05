@@ -11,6 +11,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import RegistrationPage from './pages/RegistrationPage';
 import MainPage from './pages/MainPage';
 import CronJobManager from './pages/CronJobs';
+import UserManagement from './pages/UserDetailPage';
 
 const App = () => {
   return (
@@ -35,6 +36,7 @@ const App = () => {
               <Route path="/main" element={<ProtectedRoute><MainPage /></ProtectedRoute>} >
           <Route path="cronJobs" element={<ProtectedRoute><CronJobManager /></ProtectedRoute>} />
           <Route path="dash" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="userManagement" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
         
         </Route>
             <Route

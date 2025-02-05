@@ -14,39 +14,36 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     // Reset errors
     setFieldErrors({ username: '', password: '' });
     setGeneralError('');
-
-    // 1. Check if username is provided
-    if (!username) {
-      setFieldErrors({ username: 'Username is required', password: '' });
+  
+    let errors = {};
+  
+    // 1️⃣ Check if username & password are both missing at the same time
+    if (!username) errors.username = 'Username is required';
+    if (!password) errors.password = 'Password is required';
+  
+    // If validation errors exist, show them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
-
-    // 2. Check if password is provided
-    if (!password) {
-      setFieldErrors({ username: '', password: 'Password is required' });
-      return;
-    }
-
+  
     try {
-      await login(username, password); // Call the login function from AuthContext
-      navigate('/main/dash'); // Redirect to dashboard on success
+      await login(username, password);
+      navigate('/main/dash'); // Redirect on success
     } catch (err) {
-      // Handle different types of errors based on the backend response
-      if (err.response?.data.message === 'Username does not exist') {
-        setGeneralError('Username does not exist');
-        setFieldErrors({ username: 'Username does not exist', password: '' });
-      } else if (err.response?.data.message === 'Incorrect password') {
-        setGeneralError('Incorrect password');
-        setFieldErrors({ username: '', password: 'Incorrect password' });
-      } else {
-        setGeneralError('An unexpected error occurred. Please try again later.');
-      }
+      console.log("🔴 Login error received:", err.response?.data?.errors);
+  
+      const backendErrors = err.response?.data?.errors || {};
+      setFieldErrors(backendErrors);
     }
   };
+  
+
+  
 
   return (
     <Box className="page-container">
@@ -57,27 +54,29 @@ const LoginPage = () => {
             vMatrix Login
           </Typography>
           <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Username"
-              variant="outlined"
-              margin="normal"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              error={!!fieldErrors.username}
-              helperText={fieldErrors.username}
-            />
-            <TextField
-              fullWidth
-              label="Password"
-              type="password"
-              variant="outlined"
-              margin="normal"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={!!fieldErrors.password}
-              helperText={fieldErrors.password}
-            />
+          <TextField
+            fullWidth
+            label="Username"
+            variant="outlined"
+            margin="normal"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            error={!!fieldErrors.username}
+            helperText={fieldErrors.username}
+          />
+
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            variant="outlined"
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={!!fieldErrors.password}
+            helperText={fieldErrors.password}
+          />
+
             <CustomButton type="submit">Login</CustomButton>
           </form>
           <CustomButton

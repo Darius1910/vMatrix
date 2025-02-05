@@ -52,7 +52,8 @@ const MainPage = () => {
             {/* Navigačné tlačidlá */}
             {[
               { label: 'DashBoard', path: '/main/dash' },
-              { label: 'CronJobs', path: '/main/cronJobs' }
+              { label: 'CronJobs', path: '/main/cronJobs' },
+              { label: 'Users', path: '/main/UserManagement' }
             ].map(({ label, path }) => (
               <Button
                 key={path}
