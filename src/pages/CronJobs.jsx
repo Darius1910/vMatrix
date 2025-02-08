@@ -10,6 +10,7 @@ const CronJobManager = () => {
   const [orgs, setOrgs] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [orgsLoading, setOrgsLoading] = useState(false); // Nový stav pre načítanie organizácií
 
   useEffect(() => {
     fetchJobs();
@@ -30,11 +31,14 @@ const CronJobManager = () => {
   };
 
   const fetchOrgs = async () => {
+    setOrgsLoading(true);
     try {
       const response = await getOrgs();
       setOrgs(Array.from(new Map(response.orgs.map(org => [org.uuid, org])).values()));
     } catch (error) {
       console.error('Error fetching organizations:', error);
+    } finally {
+      setOrgsLoading(false);
     }
   };
   
@@ -133,11 +137,19 @@ const CronJobManager = () => {
           }}
         >
           <MenuItem value="" disabled>Select an organization</MenuItem>
-          {orgs.map((org) => (
-            <MenuItem key={org.uuid} value={org.name}>
-              {org.name}
+          {orgsLoading ? (
+            <MenuItem disabled>
+              <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                <CircularProgress size={24} />
+              </Box>
             </MenuItem>
-          ))}
+          ) : (
+            orgs.map((org) => (
+              <MenuItem key={org.uuid} value={org.name}>
+                {org.name}
+              </MenuItem>
+            ))
+          )}
         </Select>
 
         <Button variant="contained" color="primary" onClick={handleAddJob} fullWidth>

@@ -3,24 +3,16 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-image: 
-    url('https://www.transparenttextures.com/patterns/cubes.png'), /* Example noise texture */
-    linear-gradient(45deg, rgb(180, 180, 180) 50%, rgb(180, 180, 180) 45%);
-  background-size: auto, cover;
-  background-position: top left, center;
-  background-repeat: repeat, no-repeat;
-}
-.page-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.2); /* Semi-transparent dark overlay */
-  z-index: -1; /* Make sure the overlay is behind content */
-}
+  background-color: #e20074; /* Tmavá šedá */
+  /*background-image: url('https://www.transparenttextures.com/patterns/cartographer.png'); /* Textúra s pruhmi */
+  /*background-image: url('https://www.transparenttextures.com/patterns/diagmonds.png'); /* Textúra s pruhmi */
+  /*background-image: url('https://www.transparenttextures.com/patterns/escheresque-dark.png'); /* Textúra s pruhmi */
+  /*background-image: url('https://www.transparenttextures.com/patterns/light-wool.png'); /* Textúra s pruhmi */
+  background-image: url('https://www.transparenttextures.com/patterns/maze-black.png'); /* Textúra s pruhmi */
+  /*background-image: url('https://www.transparenttextures.com/patterns/shattered.png'); /* Textúra s pruhmi */
 
+  background-position: center;
+}
 
 
 /* Card container styling (applies to all pages) */

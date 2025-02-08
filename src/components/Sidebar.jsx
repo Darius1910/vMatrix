@@ -213,8 +213,8 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
         },
       }}
     >
-      <Box sx={{ display: 'flex', paddingX: 1 }}>
-      <Typography variant="h6" flex='1'  fontWeight="bold" color="text.primary">
+      <Box sx={{ display: 'flex', }}>
+        <Typography variant="h6" flex="1" fontWeight="bold" color="text.primary">
           Topology
         </Typography>
         <IconButton onClick={() => setSidebarVisible(false)} color="inherit">
