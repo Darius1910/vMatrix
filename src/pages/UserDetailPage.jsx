@@ -1,16 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  Typography,
   Paper,
   CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Select,
+  MenuItem,
   IconButton,
   Dialog,
   DialogTitle,
@@ -18,12 +13,13 @@ import {
   DialogActions,
   Checkbox,
   FormControlLabel,
-  Select,
-  MenuItem,
-} from "@mui/material";
-import { Delete, Edit } from "@mui/icons-material";
-import { getUsers, editUser, deleteUser, getOrgs } from "../api";
-import Scrollbar from "../components/Scrollbar"; // ✅ Custom Scrollbar
+  Typography
+} from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
+import { Delete } from '@mui/icons-material';
+import { getUsers, editUser, deleteUser, getOrgs, editOrgs, checkAuth } from '../api';
+import CustomButton from '../components/CustomButton';
+import Scrollbar from '../components/Scrollbar';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -31,13 +27,15 @@ const UserManagement = () => {
   const [orgs, setOrgs] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedOrgs, setSelectedOrgs] = useState([]);
-  const [selectedRole, setSelectedRole] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   useEffect(() => {
     fetchUsers();
     fetchOrgs();
+    fetchUserRole();
   }, []);
 
   const fetchUsers = async () => {
@@ -52,189 +50,319 @@ const UserManagement = () => {
     }
   };
 
-const fetchOrgs = async () => {
-  try {
-    const response = await getOrgs();
-    console.log("Organizations fetched:", response.data);
-    setOrgs(response.data);
-  } catch (error) {
-    console.error("Error fetching organizations:", error.response ? error.response.data : error.message);
-  }
-};
-
-
-const handleEditUser = async (id, role, accountEnabled, allowedOrgs = []) => {
-  setUpdatingStatus(id); // Prevent flickering on toggle
-
-  try {
-    console.log("Updating user:", { id, role, accountEnabled, allowedOrgs });
-
-    await editUser(id, { role, account_enabled: accountEnabled, allowed_Orgs: allowedOrgs });
-
-    // ✅ Ensure `allowedOrgs` is always an array and use correct key names
-    setUsers((prevUsers) =>
-      prevUsers.map((user) =>
-        user._id === id ? { ...user, role, account_enabled: accountEnabled, allowed_Orgs: allowedOrgs } : user
-      )
-    );
-  } catch (error) {
-    console.error("Error updating user:", error);
-    alert("Failed to update user. Check the console for details.");
-  } finally {
-    setUpdatingStatus(null);
-  }
-};
-  
-
-  const handleDeleteUser = async (id) => {
+  const fetchOrgs = async () => {
     try {
-      await deleteUser(id);
-      fetchUsers();
+      const response = await getOrgs();
+      if (response && response.orgs) {
+        const uniqueOrgs = Array.from(
+          new Map(response.orgs.map(org => [org.uuid, org])).values()
+        );
+        setOrgs(uniqueOrgs);
+      } else {
+        setOrgs([]);
+      }
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("Error fetching organizations:", error);
+      setOrgs([]);
     }
   };
 
-  const handleOpenModal = (user) => {
-    setSelectedUser(user);
-    setSelectedOrgs(user.allowed_Orgs.map((org) => org.uuid));
-    setSelectedRole(user.role);
-    setModalOpen(true);
+  const fetchUserRole = async () => {
+    try {
+      const response = await checkAuth();
+      setUserRole(response.role);
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+    }
   };
 
+  const handleEditOrgs = async (id, allowedOrgs) => {
+    try {
+      await editOrgs(id, { orgs: allowedOrgs });
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating user organizations:", error);
+    }
+  };
+
+  const handleToggleUserStatus = async (user) => {
+    if (userRole !== 'admin') return; // Restrict for non-admins
+    const newStatus = !user.account_enabled;
+    try {
+      await editUser(user._id, {
+        role: user.role,
+        account_enabled: newStatus.toString()
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating user status:", error);
+    }
+  };
+
+  const handleRoleChange = async (user, newRole) => {
+    if (userRole !== 'admin') return; // Restrict for non-admins
+    try {
+      await editUser(user._id, {
+        role: newRole,
+        account_enabled: user.account_enabled.toString()
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating user role:", error);
+    }
+  };
+
+  const handleOpenDeleteConfirm = (id) => {
+    setUserToDelete(id);
+    setConfirmDeleteOpen(true);
+  };
+  
+  // Function to delete the user after confirmation
+  const handleDeleteUser = async () => {
+    if (userRole !== 'admin' || !userToDelete) return;
+    try {
+      await deleteUser(userToDelete);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+    } finally {
+      setConfirmDeleteOpen(false);
+      setUserToDelete(null);
+    }
+  };
+
+  const handleOpenModal = async (user) => {
+    setSelectedUser(user);
+    try {
+      const response = await getOrgs();
+      const uniqueOrgs = Array.from(
+        new Map(response.orgs.map(org => [org.uuid, org])).values()
+      );
+      setOrgs(uniqueOrgs);
+    } catch (error) {
+      console.error("Error fetching organizations in modal:", error);
+      setOrgs([]);
+    }
+    setSelectedOrgs([...new Set(user.allowed_Orgs.map(org => org.uuid))]);
+    setModalOpen(true);
+  };
+  
+
   const handleToggleOrg = (uuid) => {
-    setSelectedOrgs((prev) =>
-      prev.includes(uuid) ? prev.filter((id) => id !== uuid) : [...prev, uuid]
+    setSelectedOrgs(prev =>
+      prev.includes(uuid)
+        ? prev.filter(id => id !== uuid)
+        : [...prev, uuid]
     );
   };
 
-  const handleSaveUserChanges = async () => {
+  const handleSaveOrgs = async () => {
     if (selectedUser) {
-      const updatedOrgs = orgs.filter((org) => selectedOrgs.includes(org.uuid));
-      await handleEditUser(selectedUser._id, selectedRole, selectedUser.account_enabled, updatedOrgs);
+     
+      const updatedOrgs = orgs.filter(org => selectedOrgs.includes(org.uuid));
+      await handleEditOrgs(selectedUser._id, updatedOrgs);
       setModalOpen(false);
     }
   };
 
+  const columns = [
+    { field: 'username', headerName: 'Username', flex: 1, minWidth: 180 },
+    { field: 'email', headerName: 'Email', flex: 1.5, minWidth: 220 },
+    {
+      field: 'role',
+      headerName: 'Role',
+      flex: 0.8,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Select
+          value={params.value}
+          onChange={(e) => handleRoleChange(params.row, e.target.value)}
+          size="small"
+          fullWidth
+          disabled={userRole !== 'admin'} // Disable for non-admins
+        >
+          <MenuItem value="user">User</MenuItem>
+          <MenuItem value="admin">Admin</MenuItem>
+        </Select>
+      )
+    },
+    {
+      field: 'account_enabled',
+      headerName: 'Status',
+      flex: 0.8,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: params.value ? "#4CAF50" : "#F44336",
+            color: "#fff",
+            "&:hover": {
+              backgroundColor: params.value ? "#388E3C" : "#D32F2F"
+            }
+          }}
+          onClick={() => handleToggleUserStatus(params.row)}
+          disabled={userRole !== 'admin'} // Disable for non-admins
+        >
+          {params.value ? 'ACTIVE' : 'DISABLED'}
+        </Button>
+      )
+    },
+    {
+      field: 'allowedOrgs',
+      headerName: 'Organizations',
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params) =>
+        userRole === 'admin' ? (
+          <Button variant="contained" onClick={() => handleOpenModal(params.row)}>
+            ALLOWED ORGS
+          </Button>
+        ) : (
+          <Button variant="contained" disabled>
+            ALLOWEDORGS
+          </Button>
+        )
+    },    
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 0.5,
+      minWidth: 100,
+      renderCell: (params) => (
+        <IconButton onClick={() => handleOpenDeleteConfirm(params.row._id)} disabled={userRole !== 'admin'}>
+          <Delete />
+        </IconButton>
+      )
+    }
+  ];
+
   return (
     <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-      <Paper elevation={3} sx={{ width: "90%", maxWidth: "1000px", p: 3 }}>
-        <Typography variant="h5" mb={3} textAlign="center">
-          User Management
-        </Typography>
-
+      <Paper elevation={3} sx={{ height: '75%', width: '90%', p: 2 }}>
         {loading ? (
-          <Box display="flex" justifyContent="center">
-            <CircularProgress />
-          </Box>
+          <CircularProgress />
         ) : (
-          <Scrollbar style={{ maxHeight: "60vh" }}> {/* ✅ Custom Scrollbar */}
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Username</strong></TableCell>
-                    <TableCell><strong>Email</strong></TableCell>
-                    <TableCell><strong>Role</strong></TableCell>
-                    <TableCell><strong>Status</strong></TableCell>
-                    <TableCell><strong>Actions</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {users.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        <Typography color="textSecondary">No users found</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    users.map((user) => (
-                      <TableRow key={user._id}>
-                        <TableCell>{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.role}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            sx={{
-                              backgroundColor: user.account_enabled ? "#4caf50" : "#e53935",
-                              color: "white",
-                              transition: "background-color 0.3s ease",
-                              "&:hover": {
-                                backgroundColor: user.account_enabled ? "#388e3c" : "#c62828",
-                              },
-                            }}
-                            size="small"
-                            disabled={updatingStatus === user._id} // Prevent flickering
-                            onClick={() =>
-                              handleEditUser(user._id, user.role, !user.account_enabled, user.allowed_Orgs)
-                            }
-                          >
-                            {user.account_enabled ? "ENABLED" : "DISABLED"}
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          <IconButton color="primary" onClick={() => handleOpenModal(user)}>
-                            <Edit />
-                          </IconButton>
-                          <IconButton color="error" onClick={() => handleDeleteUser(user._id)}>
-                            <Delete />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Scrollbar>
+          <DataGrid
+            rows={users.map((user, index) => ({
+              id: index + 1,
+              ...user
+            }))}
+            columns={columns}
+            pageSizeOptions={[5, 10, 20]}
+            sx={{ border: 0 }}
+          />
         )}
       </Paper>
+      <Dialog 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)}
+        sx={{
+          "& .MuiDialog-paper": { 
+            borderRadius: "12px", 
+            padding: "20px",
+            minWidth: "400px"
+          }
+        }}
+      >
+        <DialogTitle 
+          sx={{ 
+            fontSize: "1.5rem", 
+            fontWeight: "bold", 
+            textAlign: "center",
+          }}
+        >
+          Select Allowed Organizations
+        </DialogTitle>
 
-      {/* User Edit Modal */}
-      <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>
-        <DialogTitle>Edit User</DialogTitle>
-        <DialogContent>
-          <Typography variant="subtitle1">Select Allowed Organizations:</Typography>
-          {orgs.length === 0 ? (
-            <Typography color="textSecondary">No organizations available</Typography>
-          ) : (
-            orgs.map((org) => (
-              <FormControlLabel
-                key={org.uuid}
-                control={<Checkbox checked={selectedOrgs.includes(org.uuid)} onChange={() => handleToggleOrg(org.uuid)} />}
-                label={org.name}
-              />
-            ))
-          )}
+        {/* Wrapped DialogContent inside Scrollbar */}
+        <Scrollbar style={{ maxHeight: "400px", overflowY: "auto", padding: "16px" }}>
+          <DialogContent dividers>
+            {orgs.length > 0 ? (
+              orgs.map((org) => (
+                <FormControlLabel
+                  key={org.uuid}
+                  control={
+                    <Checkbox
+                      checked={selectedOrgs.includes(org.uuid)}
+                      onChange={() => handleToggleOrg(org.uuid)}
+                    />
+                  }
+                  label={
+                    <Typography sx={{ fontSize: "1rem" }}>
+                      {org.name}
+                    </Typography>
+                  }
+                  sx={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    paddingY: "5px" 
+                  }}
+                />
+              ))
+            ) : (
+              <Typography sx={{ textAlign: "center", padding: "10px" }}>
+                No organizations available
+              </Typography>
+            )}
+          </DialogContent>
+        </Scrollbar>
 
-          <Typography variant="subtitle1" mt={2}>Change Role:</Typography>
-          <Select
-            fullWidth
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-            variant="outlined"
-            size="small"
-          >
-            <MenuItem value="user">User</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
-          </Select>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            sx={{
-              color: "#757575",
-              "&:hover": { backgroundColor: "#e0e0e0" }
-            }}
-            onClick={() => setModalOpen(false)}
+        <DialogActions sx={{ justifyContent: "space-between", padding: "16px" }}>
+          <CustomButton 
+            variant="outlined" 
+            onClick={() => setModalOpen(false)} 
           >
             Cancel
-          </Button>
-          <Button variant="contained" onClick={handleSaveUserChanges}>
+          </CustomButton>
+          <CustomButton 
+            variant="contained" 
+            onClick={handleSaveOrgs}
+          >
             Save
-          </Button>
+          </CustomButton>
         </DialogActions>
       </Dialog>
+      <Dialog
+  open={confirmDeleteOpen}
+  onClose={() => setConfirmDeleteOpen(false)}
+  sx={{
+    "& .MuiDialog-paper": {
+      borderRadius: "12px",
+      padding: "20px",
+      minWidth: "350px"
+    }
+  }}
+>
+  <DialogTitle
+    sx={{
+      fontSize: "1.5rem",
+      fontWeight: "bold",
+      textAlign: "center",
+    }}
+  >
+    Confirm Deletion
+  </DialogTitle>
+  <DialogContent>
+    <Typography sx={{ fontSize: "1rem", textAlign: "center", padding: "10px" }}>
+      Are you sure you want to delete this user? <br/><br/>  <strong>This action cannot be undone!</strong>
+    </Typography>
+  </DialogContent>
+  <DialogActions sx={{ justifyContent: "space-between", padding: "16px" }}>
+    <CustomButton
+      variant="outlined"
+      onClick={() => setConfirmDeleteOpen(false)}
+    >
+      Cancel
+    </CustomButton>
+    <CustomButton
+      variant="contained"
+      onClick={handleDeleteUser}
+    >
+      Delete
+    </CustomButton>
+  </DialogActions>
+</Dialog>      
     </Box>
   );
 };

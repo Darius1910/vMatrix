@@ -18,7 +18,7 @@ import {
   Typography,
   Divider,
 } from '@mui/material';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, ChevronLeft } from '@mui/icons-material';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
 import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
@@ -48,7 +48,7 @@ const typeColors = {
   EdgeGateway: '#455A64',
 };
 
-const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible }) => {
+const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -213,6 +213,16 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
         },
       }}
     >
+      <Box sx={{ display: 'flex', paddingX: 1 }}>
+      <Typography variant="h6" flex='1'  fontWeight="bold" color="text.primary">
+          Topology
+        </Typography>
+        <IconButton onClick={() => setSidebarVisible(false)} color="inherit">
+          <ChevronLeft />
+        </IconButton>
+      </Box>
+      <Divider sx={{ backgroundColor: theme.palette.divider }} />
+
       <Box sx={{ padding: 1 }}>
         <TextField fullWidth variant="outlined" size="small" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </Box>

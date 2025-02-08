@@ -20,9 +20,10 @@ export const registerUser = async (email, username, password) => {
 
 // Kontrola autentifikácie
 export const checkAuth = async () => {
-  const response = await api.get('/session/me');  // Get user session (including username)
-  return response.data;  // Return the session data (which includes username)
+  const response = await api.get('/session/me');  // API endpoint už vracia `role`
+  return response.data;  // Teraz obsahuje `{ username, role }`
 };
+
 
 
 // Získanie session
@@ -86,33 +87,30 @@ export const getOrgs = async () => {
   const response = await api.get('/api/orgs');
   return response.data;
 };
- 
+
 export const updateNetworkData = async () => {
   const response = await api.get('/api/updateNetworkData');
   return response.data;
 };
- 
+
 export const getUsers = async () => {
   const response = await api.get('/api/user/getAll');
   return response.data;
 };
- 
+
 export const editUser = async (id, data) => {
   const response = await api.put(`/api/user/edit/${id}`, data);
   return response.data;
 };
- 
+
 export const deleteUser = async (id) => {
   const response = await api.delete(`/api/user/delete/${id}`);
   return response.data;
 };
- 
- 
-export const editOrgs = async (id, data) => {
-  const response = await api.delete(`/api/user/addOrg/${id}`, data);
+
+
+export const editOrgs = async (id,data) => {
+  const response = await api.put(`/api/user/addOrg/${id}`,data);
   return response.data;
 };
-
-
-
 
