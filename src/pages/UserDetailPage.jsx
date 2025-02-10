@@ -20,6 +20,7 @@ import { Delete } from '@mui/icons-material';
 import { getUsers, editUser, deleteUser, getOrgs, editOrgs, checkAuth } from '../api';
 import CustomButton from '../components/CustomButton';
 import Scrollbar from '../components/Scrollbar';
+import * as XLSX from 'xlsx';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -237,8 +238,62 @@ const UserManagement = () => {
     }
   ];
 
+
+  const handleExportToExcel = () => {
+    if (users.length === 0) {
+      console.warn("No user data to export");
+      return;
+    }
+  
+    console.log("Users before export:", users);
+  
+    const formattedData = users.map(user => {
+      let orgNames = "None"; // Default value
+  
+      if (user.allowed_Orgs && Array.isArray(user.allowed_Orgs)) {
+        // Extract organization names exactly as in the UI
+        const extractedNames = user.allowed_Orgs.map(org => org.name).filter(Boolean);
+        
+        if (extractedNames.length > 0) {
+          orgNames = extractedNames.join(", ");
+        }
+      }
+  
+      return {
+        Username: user.username,
+        Email: user.email,
+        Role: user.role,
+        Status: user.account_enabled ? "ACTIVE" : "DISABLED",
+        Allowed_Organizations: orgNames,
+      };
+    });
+  
+    console.log("Exporting Data:", formattedData); // Debugging output
+  
+    const ws = XLSX.utils.json_to_sheet(formattedData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Users");
+    XLSX.writeFile(wb, "UserDetails.xlsx");
+  };
+  
+  
+  
+  
+  
+  
+
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100vh">
+      <Box sx={{ width: '90%', display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleExportToExcel} 
+          sx={{ backgroundColor: "#e91e63", width: '200px' }}
+        >
+          EXPORT TO EXCEL
+        </Button>
+      </Box>
       <Paper elevation={3} sx={{ height: '75%', width: '90%', p: 2 }}>
         {loading ? (
           <CircularProgress />
