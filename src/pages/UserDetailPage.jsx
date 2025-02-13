@@ -276,14 +276,8 @@ const UserManagement = () => {
     XLSX.writeFile(wb, "UserDetails.xlsx");
   };
   
-  
-  
-  
-  
-  
-
   return (
-    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100vh">
+    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100vh" sx={{ mt: -5 }}>
       <Box sx={{ width: '90%', display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
         <Button 
           variant="contained" 

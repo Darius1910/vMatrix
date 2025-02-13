@@ -125,7 +125,6 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false }) => {
           top: 10,
           left: 10,
           backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
-          color: isDarkMode ? '#fff' : '#000',
           padding: '10px 15px',
           borderRadius: '8px',
           boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',

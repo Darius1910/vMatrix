@@ -12,6 +12,7 @@ import RegistrationPage from './pages/RegistrationPage';
 import MainPage from './pages/MainPage';
 import CronJobManager from './pages/CronJobs';
 import UserManagement from './pages/UserDetailPage';
+import CustomModeCanvas from './pages/CustomMode';
 
 const App = () => {
   return (
@@ -37,6 +38,8 @@ const App = () => {
           <Route path="cronJobs" element={<ProtectedRoute><CronJobManager /></ProtectedRoute>} />
           <Route path="dash" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="userManagement" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+          <Route path="customMode" element={<ProtectedRoute><CustomModeCanvas /></ProtectedRoute>} />
+
         
         </Route>
             <Route

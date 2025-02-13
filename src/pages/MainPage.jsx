@@ -51,9 +51,10 @@ const MainPage = () => {
 
             {/* Navigačné tlačidlá */}
             {[
-              { label: 'DashBoard', path: '/main/dash' },
+              { label: 'Dashboard', path: '/main/dash' },
               { label: 'CronJobs', path: '/main/cronJobs' },
-              { label: 'Users', path: '/main/UserManagement' }
+              { label: 'Users', path: '/main/UserManagement' },
+              { label: 'Custom Mode', path: '/main/CustomMode' } // Oprava textu na jednom riadku
             ].map(({ label, path }) => (
               <Button
                 key={path}
@@ -62,12 +63,15 @@ const MainPage = () => {
                 sx={{
                   color: 'white',
                   fontSize: '16px',
+                  textAlign: 'center',
                   fontWeight: location.pathname === path ? 'bold' : 'normal',
                   borderRadius: '8px',
                   paddingX: 2,
                   paddingY: 1,
                   transition: 'all 0.2s ease-in-out',
                   position: 'relative',
+                  whiteSpace: 'nowrap', // Zabezpečí, že text sa nerozdelí
+                  minWidth: '120px', // Konzistentná šírka tlačidiel
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.1)', // Jemný hover efekt
                   },
