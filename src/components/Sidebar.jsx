@@ -75,6 +75,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   };
 
   const collectAllNodeIds = (nodes) => {
+    if (!Array.isArray(nodes)) return []; // Ochrana pred chybou
     let ids = [];
     nodes.forEach((node) => {
       ids.push(node.id);
@@ -84,6 +85,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     });
     return ids;
   };
+  
 
   const handleSelectAllChange = (e) => {
     if (e.target.checked) {
@@ -99,10 +101,12 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   const filterTopology = (nodes, searchTerm, selectedTypes) => {
     return nodes
       .map((node) => {
-        const matchLabel = node.label.toLowerCase().includes(searchTerm.toLowerCase());
+        if (!node || !node.label) return null; // Ochrana pred undefined label
+  
+        const matchLabel = node.label.toLowerCase().includes(searchTerm.toLowerCase()); 
         const matchType = selectedTypes.length === 0 || selectedTypes.includes(node.type);
         const filteredChildren = filterTopology(node.children || [], searchTerm, selectedTypes);
-
+  
         if ((matchLabel && matchType) || filteredChildren.length > 0) {
           return { ...node, children: filteredChildren, isHighlighted: searchTerm.length > 0 && matchLabel };
         }
@@ -110,6 +114,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       })
       .filter(Boolean);
   };
+  
 
   const filteredTopology = filterTopology(topology, searchTerm, selectedTypes);
 

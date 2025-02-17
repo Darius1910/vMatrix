@@ -2,75 +2,81 @@ import React, { useEffect, useState } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import Sidebar from '../components/Sidebar';
 import TopologyCanvas from '../components/TopologyCanvas';
+import Loader from '../components/Loader';
 import { Box, IconButton } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 const DashboardPage = () => {
   const [topologyData, setTopologyData] = useState([]);
-  const [selectedNodes, setSelectedNodes] = useState(['org-0']);
+  const [selectedNodes, setSelectedNodes] = useState('');
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [loading, setLoading] = useState(true); // ✅ Opravený názov stavu
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTopology = async () => {
+      setLoading(true); // ✅ Správne použitie `setLoading`
       try {
-        const response = await fetch('/src/data/data.json');
-        const data = await response.json();
+        const response = await fetch('/api/topology');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-        const transformTopology = (data) => {
-          return data.topology.map((org, index) => ({
-            id: `org-${index}`,
-            label: org.data[0]?.name || `vOrg-${index}`,
-            type: 'vOrg',
-            children: org.data[0]?.vdcs.map((vdc, vdcIndex) => ({
-              id: `org-${index}-vdc-${vdcIndex}`,
-              label: vdc.name,
-              type: 'vDC',
-              children: [
-                ...(vdc.vapps.map((vApp, vAppIndex) => ({
-                  id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
-                  label: vApp.name,
-                  type: 'vApp',
-                  children: vApp.details.VirtualMachines.map((vm, vmIndex) => ({
-                    id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
-                    label: vm.name,
-                    type: 'VM',
-                    children: vm.networks.map((network, networkIndex) => ({
-                      id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}`,
-                      label: network.networkName,
-                      type: 'Network',
-                      children: network.edgeGateway
-                        ? [{
-                          id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}-edgeGateway`,
-                          label: network.edgeGateway.edgeGatewayName || 'Edge Gateway',
-                          type: 'EdgeGateway',
-                        }]
-                        : [],
-                    })),
-                  })),
-                }))),
+        const topologyData = await response.json();
+        console.log('Fetched topology:', topologyData);
 
-                ...(vdc.edgeGateways || []).map((edgeGateway, edgeGatewayIndex) => ({
-                  id: `org-${index}-vdc-${vdcIndex}-edgeGateway-${edgeGatewayIndex}`,
-                  label: edgeGateway.edgeGatewayName || `Edge Gateway ${edgeGatewayIndex}`,
-                  type: 'EdgeGateway',
-                })),
-              ],
-            })),
-          }));
-        };
-
-        setTopologyData(transformTopology(data));
+        if (!Array.isArray(topologyData) || topologyData.length === 0) {
+          console.warn('Topology data is empty or not in expected format');
+          setTopologyData([]);
+        } else {
+          setTopologyData(transformTopology(topologyData));
+        }
       } catch (error) {
         console.error('Failed to fetch topology data:', error);
+        setTopologyData([]);
+      } finally {
+        setLoading(false); // ✅ Správne použitie `setLoading`
       }
     };
 
-    fetchData();
+    fetchTopology();
   }, []);
+
+  const transformTopology = (data) => {
+    return data.map((org, index) => ({
+      id: `org-${index}`,
+      label: org.name || `vOrg-${index}`,
+      type: 'vOrg',
+      children: (org.vdcs ?? []).map((vdc, vdcIndex) => ({
+        id: `org-${index}-vdc-${vdcIndex}`,
+        label: vdc.name ?? `vDC-${vdcIndex}`,
+        type: 'vDC',
+        children: (vdc.vapps ?? []).map((vApp, vAppIndex) => ({
+          id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
+          label: vApp.name ?? `vApp-${vAppIndex}`,
+          type: 'vApp',
+          children: (vApp.details?.VirtualMachines ?? []).map((vm, vmIndex) => ({
+            id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
+            label: vm.name ?? `VM-${vmIndex}`,
+            type: 'VM',
+            children: (vm.networks ?? []).map((network, networkIndex) => ({
+              id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}`,
+              label: network.networkName ?? `Network-${networkIndex}`,
+              type: 'Network',
+              children: (network.edgeGateway ? [{
+                id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}-edgeGateway`,
+                label: network.edgeGateway.edgeGatewayName || 'Edge Gateway',
+                type: 'EdgeGateway',
+              }] : [])
+            }))
+          }))
+        }))
+      }))
+    }));
+  };
 
   return (
     <div className="dashboard-container" style={{ display: 'flex', height: '100vh' }}>
-      {/* Sidebar s animovanou šírkou */}
+      {loading && <Loader />} {/* ✅ Loader sa zobrazí iba pri `loading === true` */}
+
+      {/* Sidebar */}
       <Box
         sx={{
           width: sidebarVisible ? '300px' : '0px',
@@ -88,7 +94,7 @@ const DashboardPage = () => {
         />
       </Box>
 
-      {/* Ikona na zobrazenie sidebaru, keď je skrytý */}
+      {/* Ikona na otvorenie Sidebaru */}
       {!sidebarVisible && (
         <IconButton
           onClick={() => setSidebarVisible(true)}
@@ -98,23 +104,21 @@ const DashboardPage = () => {
             left: 16,
             transform: 'translateY(-50%)',
             zIndex: 1300,
-            backgroundColor: '#e02460', // Magentová farba
-            color: 'white', // Biela farba ikony
-            borderRadius: '50%', // Zaoblené tlačidlo
+            backgroundColor: '#e02460',
+            color: 'white',
+            borderRadius: '50%',
             width: 40,
             height: 40,
             boxShadow: 3,
             transition: 'background-color 0.2s ease-in-out',
-            '&:hover': {
-              backgroundColor: '#c81e5b', // Tmavšia magenta pri hoveri
-            },
+            '&:hover': { backgroundColor: '#c81e5b' },
           }}
         >
-          <ChevronRightIcon /> {/* Biela šípka doprava */}
+          <ChevronRightIcon />
         </IconButton>
       )}
 
-      {/* Hlavná topológia sa roztiahne na 100%, ak je sidebar skrytý */}
+      {/* ReactFlow Canvas */}
       <Box
         className="canvas-container"
         sx={{
@@ -124,7 +128,11 @@ const DashboardPage = () => {
         }}
       >
         <ReactFlowProvider>
-          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes} />
+          <TopologyCanvas
+            topology={topologyData}
+            selectedNodes={selectedNodes}
+            setSelectedNodes={setSelectedNodes}
+          />
         </ReactFlowProvider>
       </Box>
     </div>
