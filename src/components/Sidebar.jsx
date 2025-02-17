@@ -171,13 +171,11 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
               <ListItemText
                 primary={node.label}
                 sx={{
-                  flexGrow: 1,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  whiteSpace: 'normal',
+                  overflow: 'visible',
+                  textOverflow: 'unset',
                   fontSize: '14px',
-                  fontWeight: children.length > 0 ? 'bold' : 'normal',
-                  color: theme.palette.text.primary,
+                  wordBreak: 'break-word',
                 }}
               />
             </Tooltip>
