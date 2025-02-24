@@ -2,81 +2,116 @@ import React, { useEffect, useState } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import Sidebar from '../components/Sidebar';
 import TopologyCanvas from '../components/TopologyCanvas';
-import Loader from '../components/Loader';
 import { Box, IconButton } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { getAllTopologyByTimestamp } from '../api';
 
 const DashboardPage = () => {
   const [topologyData, setTopologyData] = useState([]);
-  const [selectedNodes, setSelectedNodes] = useState('');
+  const [selectedNodes, setSelectedNodes] = useState(['org-0']);
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [loading, setLoading] = useState(true); // ✅ Opravený názov stavu
 
-  useEffect(() => {
-    const fetchTopology = async () => {
-      setLoading(true); // ✅ Správne použitie `setLoading`
-      try {
-        const response = await fetch('/api/topology');
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-        const topologyData = await response.json();
-        console.log('Fetched topology:', topologyData);
+  const transformTopology = (data, timestamp) => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.warn('Invalid or empty topology data:', data);
+      return [];
+    }
 
-        if (!Array.isArray(topologyData) || topologyData.length === 0) {
-          console.warn('Topology data is empty or not in expected format');
-          setTopologyData([]);
-        } else {
-          setTopologyData(transformTopology(topologyData));
-        }
-      } catch (error) {
-        console.error('Failed to fetch topology data:', error);
-        setTopologyData([]);
-      } finally {
-        setLoading(false); // ✅ Správne použitie `setLoading`
-      }
-    };
+    // Predpokladáme, že chceme pracovať s prvým záznamom v poli
+    const firstItem = data[0];
+    if (!firstItem.topology || !Array.isArray(firstItem.topology)) {
+      console.warn('No valid topology found in the data:', firstItem);
+      return [];
+    }
 
-    fetchTopology();
-  }, []);
+    // Nájdeme topológiu pre vybraný timestamp
+    const selectedTopology = firstItem.topology.find(item => item.timeStamp === timestamp);
+    if (!selectedTopology) {
+      console.warn('No topology found for selected timestamp:', timestamp);
+      return [];
+    }
 
-  const transformTopology = (data) => {
-    return data.map((org, index) => ({
+    console.log("Selected Topology:", selectedTopology);
+
+    return selectedTopology.data.map((org, index) => ({
       id: `org-${index}`,
       label: org.name || `vOrg-${index}`,
       type: 'vOrg',
-      children: (org.vdcs ?? []).map((vdc, vdcIndex) => ({
+      children: org.vdcs?.map((vdc, vdcIndex) => ({
         id: `org-${index}-vdc-${vdcIndex}`,
-        label: vdc.name ?? `vDC-${vdcIndex}`,
+        label: vdc.name,
         type: 'vDC',
-        children: (vdc.vapps ?? []).map((vApp, vAppIndex) => ({
-          id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
-          label: vApp.name ?? `vApp-${vAppIndex}`,
-          type: 'vApp',
-          children: (vApp.details?.VirtualMachines ?? []).map((vm, vmIndex) => ({
-            id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
-            label: vm.name ?? `VM-${vmIndex}`,
-            type: 'VM',
-            children: (vm.networks ?? []).map((network, networkIndex) => ({
-              id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}`,
-              label: network.networkName ?? `Network-${networkIndex}`,
-              type: 'Network',
-              children: (network.edgeGateway ? [{
-                id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}-edgeGateway`,
-                label: network.edgeGateway.edgeGatewayName || 'Edge Gateway',
-                type: 'EdgeGateway',
-              }] : [])
-            }))
-          }))
-        }))
-      }))
+        children: [
+          ...(vdc.vapps?.map((vApp, vAppIndex) => ({
+            id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
+            label: vApp.name,
+            type: 'vApp',
+            children: vApp.details?.VirtualMachines?.map((vm, vmIndex) => ({
+              id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
+              label: vm.name,
+              type: 'VM',
+              children: vm.networks?.map((network, networkIndex) => ({
+                id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}`,
+                label: network.networkName,
+                type: 'Network',
+                children: network.edgeGateway
+                  ? [{
+                      id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}-edgeGateway`,
+                      label: network.edgeGateway.edgeGatewayName || 'Edge Gateway',
+                      type: 'EdgeGateway',
+                    }]
+                  : [],
+              })),
+            })),
+          })) || []),
+
+          ...(vdc.edgeGateways || []).map((edgeGateway, edgeGatewayIndex) => ({
+            id: `org-${index}-vdc-${vdcIndex}-edgeGateway-${edgeGatewayIndex}`,
+            label: edgeGateway.edgeGatewayName || `Edge Gateway ${edgeGatewayIndex}`,
+            type: 'EdgeGateway',
+          })),
+        ],
+      })) || [],
     }));
   };
 
+  // ✅ Fetch Data volá transformTopology
+  const fetchData = async (uuid, timestamp) => {
+    try {
+      setTopologyData([]); // ✅ Reset pred načítaním
+  
+      if (!uuid || !timestamp) {
+        console.warn("No UUID or timestamp provided. Clearing topology.");
+        return; // ✅ Pri prázdnych hodnotách zruší načítanie
+      }
+  
+      const response = await getAllTopologyByTimestamp(uuid, timestamp);
+      const data = response.data;
+  
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.warn("No data found for selected vOrg or timestamp.");
+        setTopologyData([]); // ✅ Vymaže topológiu
+        return;
+      }
+  
+      const transformedData = transformTopology(data, timestamp);
+      setTopologyData(transformedData);
+    } catch (error) {
+      console.error("Failed to fetch topology data:", error);
+      setTopologyData([]); // ✅ Vyčistí aj pri chybe
+    }
+  };
+  
+  
+
+  useEffect(() => {
+    // Initial fetch with default UUID and timestamp
+    fetchData('default-uuid', 'default-timestamp');
+  }, []);
+
   return (
     <div className="dashboard-container" style={{ display: 'flex', height: '100vh' }}>
-      {loading && <Loader />} {/* ✅ Loader sa zobrazí iba pri `loading === true` */}
-
-      {/* Sidebar */}
       <Box
         sx={{
           width: sidebarVisible ? '300px' : '0px',
@@ -91,10 +126,10 @@ const DashboardPage = () => {
           setSelectedNodes={setSelectedNodes}
           sidebarVisible={sidebarVisible}
           setSidebarVisible={setSidebarVisible}
+          fetchData={fetchData}
         />
       </Box>
 
-      {/* Ikona na otvorenie Sidebaru */}
       {!sidebarVisible && (
         <IconButton
           onClick={() => setSidebarVisible(true)}
@@ -111,14 +146,15 @@ const DashboardPage = () => {
             height: 40,
             boxShadow: 3,
             transition: 'background-color 0.2s ease-in-out',
-            '&:hover': { backgroundColor: '#c81e5b' },
+            '&:hover': {
+              backgroundColor: '#c81e5b',
+            },
           }}
         >
           <ChevronRightIcon />
         </IconButton>
       )}
 
-      {/* ReactFlow Canvas */}
       <Box
         className="canvas-container"
         sx={{
@@ -128,11 +164,7 @@ const DashboardPage = () => {
         }}
       >
         <ReactFlowProvider>
-          <TopologyCanvas
-            topology={topologyData}
-            selectedNodes={selectedNodes}
-            setSelectedNodes={setSelectedNodes}
-          />
+          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes} />
         </ReactFlowProvider>
       </Box>
     </div>

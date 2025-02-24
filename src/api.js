@@ -88,6 +88,28 @@ export const getOrgs = async () => {
   return response.data;
 };
 
+export const getAllTopology = async (uuid) => {
+  try {
+    const response = await api.get(`/api/Alltopology/${uuid}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching all topology for UUID ${uuid}:`, error);
+    throw error;
+  }
+};
+
+export const getAllTopologyByTimestamp = async (uuid, timestamp) => {
+  try {
+    const response = await api.get(`/api/Alltopology/${uuid}?timestamp=${timestamp}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching topology for UUID ${uuid} and timestamp ${timestamp}:`, error);
+    throw error;
+  }
+};
+
+
+
 export const updateNetworkData = async () => {
   const response = await api.get('/api/updateNetworkData');
   return response.data;

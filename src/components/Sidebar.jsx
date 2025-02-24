@@ -17,6 +17,7 @@ import {
   MenuItem,
   Typography,
   Divider,
+  CircularProgress
 } from '@mui/material';
 import { ExpandLess, ExpandMore, ChevronLeft } from '@mui/icons-material';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
@@ -27,6 +28,7 @@ import NetworkCheckOutlinedIcon from '@mui/icons-material/NetworkCheckOutlined';
 import RouterOutlinedIcon from '@mui/icons-material/RouterOutlined';
 import Scrollbar from '../components/Scrollbar';
 import { useTheme } from '@mui/material/styles';
+import { getOrgs, getAllTopology } from '../api'; // Assuming the same API call is used
 
 const drawerWidth = 300;
 
@@ -48,11 +50,20 @@ const typeColors = {
   EdgeGateway: '#455A64',
 };
 
-const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible }) => {
+const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible, fetchData }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypes, setSelectedTypes] = useState([]);
+  const [orgs, setOrgs] = useState([]);
+  const [selectedOrg, setSelectedOrg] = useState('');
+  const [orgsLoading, setOrgsLoading] = useState(false);
+  const [allTopology, setAllTopology] = useState([]);
+  const [timestamps, setTimestamps] = useState([]);
+  const [selectedTimestamp, setSelectedTimestamp] = useState('');
+  const [topologyLoading, setTopologyLoading] = useState(false);
+
+
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -115,7 +126,58 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       .filter(Boolean);
   };
   
-
+  useEffect(() => {
+    const fetchOrgs = async () => {
+      setOrgsLoading(true);
+      try {
+        const response = await getOrgs();
+        setOrgs(Array.from(new Map(response.orgs.map(org => [org.uuid, org])).values()));
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+      } finally {
+        setOrgsLoading(false);
+      }
+    };
+  
+    fetchOrgs();
+  }, []);
+  
+  useEffect(() => {
+    const fetchAllTopology = async () => {
+      if (!selectedOrg) return;
+  
+      const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+      if (!selectedOrgUUID) {
+        console.error('UUID not found for selected organization');
+        return;
+      }
+  
+      setTopologyLoading(true);
+      setAllTopology([]);
+      setTimestamps([]);
+      setSelectedTimestamp(''); // ✅ Reset pri zmene vOrg
+      setSelectedNodes([]);
+  
+      try {
+        const response = await getAllTopology(selectedOrgUUID);
+        const topologyData = response?.data?.[0]?.topology || [];
+  
+        const timestamps = topologyData.map(item => item.timeStamp);
+        setAllTopology(topologyData);
+        setTimestamps(timestamps);
+  
+        // ✅ Nepredvolí žiaden timestamp automaticky
+      } catch (error) {
+        console.error('Error fetching all topology:', error);
+      } finally {
+        setTopologyLoading(false);
+      }
+    };
+  
+    fetchAllTopology();
+  }, [selectedOrg, orgs]);
+  
+  
   const filteredTopology = filterTopology(topology, searchTerm, selectedTypes);
 
   useEffect(() => {
@@ -132,19 +194,19 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       expandNodes(filteredTopology);
     }
     setExpanded(expandedNodes);
-  }, [searchTerm, selectedTypes, topology]);
+  }, [topology]);
 
   const renderTree = (nodes = [], level = 0, parentColor = null) => {
     return nodes.map((node) => {
       if (!node || !node.id || !node.label) return null;
-
+  
       const nodeId = node.id;
       const isExpanded = expanded[nodeId] || false;
       const children = node.children || [];
       const IconComponent = typeIcons[node.type] || null;
       const color = typeColors[node.type] || parentColor || theme.palette.text.primary;
       const isHighlighted = node.isHighlighted;
-
+  
       return (
         <Box key={nodeId}>
           <ListItem
@@ -156,7 +218,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
               backgroundColor: isHighlighted ? 'rgba(33, 150, 243, 0.2)' : 'inherit',
               '&:hover': { backgroundColor: isHighlighted ? 'rgba(33, 150, 243, 0.3)' : theme.palette.action.hover, borderRadius: '4px' },
               borderLeft: level > 0 ? `4px solid ${color}` : 'none',
-              paddingLeft: level > 0 ? '8px' : '0px',
+              paddingLeft: level > 0 ? `${8 * level}px` : '8px', // Zväčšuje odsadenie podľa úrovne
             }}
           >
             <ListItemIcon sx={{ minWidth: '28px' }}>
@@ -185,6 +247,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
               </IconButton>
             )}
           </ListItem>
+  
           {children.length > 0 && (
             <Collapse in={isExpanded} timeout="auto" unmountOnExit>
               <List disablePadding>{renderTree(children, level + 1, color)}</List>
@@ -194,6 +257,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       );
     });
   };
+  
 
   return (
     <Drawer
@@ -226,13 +290,15 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       </Box>
       <Divider sx={{ backgroundColor: theme.palette.divider }} />
 
-      <Box sx={{ padding: 1 }}>
+      <Box sx={{ paddingX: 1, paddingTop:1 }}>
         <TextField fullWidth variant="outlined" size="small" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </Box>
 
-      <Box sx={{ padding: 1 }}>
+      <Box sx={{ paddingX: 1, }}>
+      <Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
+        Filter
+      </Typography>
         <FormControl fullWidth size="small">
-          <InputLabel>Filter</InputLabel>
           <Select multiple value={selectedTypes} onChange={handleTypeFilterChange}>
             {Object.keys(typeIcons).map((type) => (
               <MenuItem key={type} value={type}>{type}</MenuItem>
@@ -241,14 +307,135 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
         </FormControl>
       </Box>
 
-      <Box sx={{ paddingX: 1, paddingY: 1, display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ paddingX: 1, display: 'flex', alignItems: 'center' }}>
         <Checkbox checked={isAllSelected} indeterminate={isIndeterminate} onChange={handleSelectAllChange} />
         <Typography variant="body2">Select All</Typography>
       </Box>
 
-      <Scrollbar style={{ flexGrow: 1 }}>
-        <List>{renderTree(filteredTopology)}</List>
-      </Scrollbar>
+      <Box sx={{ paddingX: 1 }}>
+      <Select
+        value={selectedOrg}
+        onChange={(e) => setSelectedOrg(e.target.value)}
+        displayEmpty
+        fullWidth
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              maxHeight: '200px',
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#e02460',
+                borderRadius: '10px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: 'rgba(0, 0, 0, 0.05)',
+              },
+            },
+          },
+        }}
+      >
+      <MenuItem value="" disabled>Select an organization</MenuItem>
+      {orgsLoading ? (
+        <MenuItem disabled>
+          <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+            <CircularProgress size={24} />
+          </Box>
+        </MenuItem>
+      ) : (
+        orgs.map((org) => (
+          <MenuItem key={org.uuid} value={org.name}>
+            {org.name}
+          </MenuItem>
+        ))
+      )}
+        </Select>
+      </Box>
+
+      {timestamps.length > 0 ? (
+  <Box sx={{ paddingX: 1 }}>
+
+<Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
+    Timestamp
+  </Typography>
+  <FormControl fullWidth size="small">
+  <Select
+    value={selectedTimestamp}
+    onChange={(e) => {
+      setSelectedTimestamp(e.target.value);
+      if (fetchData) {
+        const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+        fetchData(selectedOrgUUID, e.target.value); // Fetch s UUID a timestampom
+      } else {
+        console.error("fetchData is not defined");
+      }
+    }}
+    displayEmpty // ✅ Zobrazí "Select a timestamp", ak je hodnota prázdna
+    fullWidth
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          maxHeight: '200px',
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#e02460',
+            borderRadius: '10px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(0, 0, 0, 0.05)',
+          },
+        },
+      },
+    }}
+  >
+    {/* ✅ Predvolená možnosť */}
+    <MenuItem value="" disabled>
+      Select a timestamp
+    </MenuItem>
+
+    {timestamps.map((ts) => (
+      <MenuItem key={ts} value={ts}>
+        {new Date(ts).toLocaleString()}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+
+  </Box>
+) : (
+  <Typography sx={{ padding: 1 }}>No timestamps available</Typography>
+)}
+
+
+<Scrollbar style={{ flexGrow: 1 }}>
+  {topologyLoading ? (
+    <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+      <CircularProgress />
+    </Box>
+  ) : (
+    <List>
+      {renderTree(
+        topology.find(item => item.timeStamp === selectedTimestamp)?.children || topology
+      )}
+    </List>
+  )}
+</Scrollbar>
+
+
+
+
+
+
+
+
+
+
     </Drawer>
   );
 };
