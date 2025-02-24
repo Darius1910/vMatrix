@@ -152,11 +152,13 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
         return;
       }
   
+      // ✅ Vyčistenie všetkých starých dát
       setTopologyLoading(true);
       setAllTopology([]);
       setTimestamps([]);
-      setSelectedTimestamp(''); // ✅ Reset pri zmene vOrg
+      setSelectedTimestamp('');
       setSelectedNodes([]);
+      fetchData(null, null); // ✅ Vyčistí aj TopologyCanvas
   
       try {
         const response = await getAllTopology(selectedOrgUUID);
@@ -166,9 +168,14 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
         setAllTopology(topologyData);
         setTimestamps(timestamps);
   
-        // ✅ Nepredvolí žiaden timestamp automaticky
+        // ✅ Ak sú prázdne dáta, vymaž topológiu
+        if (timestamps.length === 0) {
+          console.warn('No timestamps available for selected vOrg.');
+          fetchData(null, null);
+        }
       } catch (error) {
         console.error('Error fetching all topology:', error);
+        fetchData(null, null); // ✅ Vyčistí aj pri chybe
       } finally {
         setTopologyLoading(false);
       }
@@ -360,7 +367,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
 <Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
     Timestamp
   </Typography>
-  <FormControl fullWidth size="small">
+<FormControl fullWidth size="small">
   <Select
     value={selectedTimestamp}
     onChange={(e) => {
