@@ -139,7 +139,7 @@ const DashboardPage = () => {
             left: 16,
             transform: 'translateY(-50%)',
             zIndex: 1300,
-            backgroundColor: '#e02460',
+            backgroundColor: '#e20074',
             color: 'white',
             borderRadius: '50%',
             width: 40,

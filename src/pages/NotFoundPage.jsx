@@ -1,11 +1,13 @@
 import React from 'react';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import CustomButton from '../components/CustomButton';
+import logo from '../assets/logo.png';
 
 const NotFoundPage = () => {
   return (
     <Box className="page-container">
       <Card className="card">
+      <img src={logo} alt="Telekom Logo" style={{ width: '120px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
         <Box className="card-header" />
         <CardContent>
           <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 3 }}>

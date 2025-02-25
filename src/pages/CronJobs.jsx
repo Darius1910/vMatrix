@@ -126,7 +126,7 @@ const CronJobManager = () => {
                   width: '8px',
                 },
                 '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: '#e02460',
+                  backgroundColor: '#e20074',
                   borderRadius: '10px',
                 },
                 '&::-webkit-scrollbar-track': {

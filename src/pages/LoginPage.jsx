@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, CardContent, TextField, Typography } from '@mui/material';
 import CustomButton from '../components/CustomButton';
+import logo from '../assets/logo.png';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -11,6 +12,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState({ username: '', password: '' });
   const [generalError, setGeneralError] = useState('');
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,8 +51,9 @@ const LoginPage = () => {
     <Box className="page-container">
       <Card className="card">
         <Box className="card-header" />
+        <img src={logo} alt="Telekom Logo" style={{ width: '120px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
         <CardContent>
-          <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 2 }}>
+          <Typography variant="h5" color="primary" sx={{ textAlign: 'center',}}>
             vMatrix Login
           </Typography>
           <form onSubmit={handleSubmit}>

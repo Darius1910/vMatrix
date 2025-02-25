@@ -23,7 +23,7 @@ const objectTypes = [
 
 const SidebarCustomMode = ({ addNode, sidebarVisible, setSidebarVisible }) => {
   const [nodeName, setNodeName] = useState('Test');
-  const [customColor, setCustomColor] = useState('#E20074');
+  const [customColor, setCustomColor] = useState('#e20074');
 
   const handleAddNode = (type, color) => {
     if (!nodeName.trim()) return;

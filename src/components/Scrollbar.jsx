@@ -10,12 +10,12 @@ const ScrollbarContainer = styled.div`
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #e02460;
+    background-color: #e20074;
     border-radius: 10px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: #e02460;
+    background-color: #e20074;
   }
 
   &::-webkit-scrollbar-track {

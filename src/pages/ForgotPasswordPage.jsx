@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Card, CardContent, TextField, Typography } from '@mui/material';
 import CustomButton from '../components/CustomButton';
+import logo from '../assets/logo.png';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -22,8 +23,9 @@ const ForgotPasswordPage = () => {
     <Box className="page-container">
       <Card className="card">
         <Box className="card-header" />
+        <img src={logo} alt="Telekom Logo" style={{ width: '120px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
         <CardContent>
-          <Typography variant="h5" color="primary" sx={{ textAlign: 'center', marginBottom: 2 }}>
+          <Typography variant="h5" color="primary" sx={{ textAlign: 'center'}}>
             Reset Password
           </Typography>
           <form onSubmit={handleSubmit}>
