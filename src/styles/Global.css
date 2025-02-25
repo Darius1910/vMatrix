@@ -5,10 +5,10 @@
   min-height: 100vh;
   background-color: #e20074; /* Tmavá šedá */
   /*background-image: url('https://www.transparenttextures.com/patterns/cartographer.png'); /* Textúra s pruhmi */
-  /*background-image: url('https://www.transparenttextures.com/patterns/diagmonds.png'); /* Textúra s pruhmi */
+  background-image: url('https://www.transparenttextures.com/patterns/diagmonds.png'); /* Textúra s pruhmi */
   /*background-image: url('https://www.transparenttextures.com/patterns/escheresque-dark.png'); /* Textúra s pruhmi */
   /*background-image: url('https://www.transparenttextures.com/patterns/light-wool.png'); /* Textúra s pruhmi */
-  background-image: url('https://www.transparenttextures.com/patterns/maze-black.png'); /* Textúra s pruhmi */
+  /*background-image: url('https://www.transparenttextures.com/patterns/maze-black.png'); /* Textúra s pruhmi */
   /*background-image: url('https://www.transparenttextures.com/patterns/shattered.png'); /* Textúra s pruhmi */
 
   background-position: center;

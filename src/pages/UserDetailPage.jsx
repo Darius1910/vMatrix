@@ -283,7 +283,7 @@ const UserManagement = () => {
           variant="contained" 
           color="primary" 
           onClick={handleExportToExcel} 
-          sx={{ backgroundColor: "#e91e63", width: '200px' }}
+          sx={{width: '200px' }}
         >
           EXPORT TO EXCEL
         </Button>
@@ -356,19 +356,18 @@ const UserManagement = () => {
             )}
           </DialogContent>
         </Scrollbar>
-
         <DialogActions sx={{ justifyContent: "space-between", padding: "16px" }}>
+        <CustomButton 
+            variant="contained" 
+            onClick={handleSaveOrgs}
+          >
+            Save
+          </CustomButton>
           <CustomButton 
             variant="outlined" 
             onClick={() => setModalOpen(false)} 
           >
             Cancel
-          </CustomButton>
-          <CustomButton 
-            variant="contained" 
-            onClick={handleSaveOrgs}
-          >
-            Save
           </CustomButton>
         </DialogActions>
       </Dialog>
@@ -399,16 +398,16 @@ const UserManagement = () => {
   </DialogContent>
   <DialogActions sx={{ justifyContent: "space-between", padding: "16px" }}>
     <CustomButton
-      variant="outlined"
-      onClick={() => setConfirmDeleteOpen(false)}
-    >
-      Cancel
-    </CustomButton>
-    <CustomButton
       variant="contained"
       onClick={handleDeleteUser}
     >
       Delete
+    </CustomButton>
+    <CustomButton
+      variant="outlined"
+      onClick={() => setConfirmDeleteOpen(false)}
+    >
+      Cancel
     </CustomButton>
   </DialogActions>
 </Dialog>      

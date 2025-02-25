@@ -10,7 +10,7 @@ const CronJobManager = () => {
   const [orgs, setOrgs] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState('');
   const [loading, setLoading] = useState(false);
-  const [orgsLoading, setOrgsLoading] = useState(false); // Nový stav pre načítanie organizácií
+  const [orgsLoading, setOrgsLoading] = useState(false); 
 
   useEffect(() => {
     fetchJobs();

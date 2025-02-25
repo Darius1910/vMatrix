@@ -412,8 +412,6 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     ))}
   </Select>
 </FormControl>
-
-
   </Box>
 ) : (
   <Typography sx={{ padding: 1 }}>No timestamps available</Typography>
@@ -433,16 +431,6 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     </List>
   )}
 </Scrollbar>
-
-
-
-
-
-
-
-
-
-
     </Drawer>
   );
 };
