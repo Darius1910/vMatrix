@@ -110,6 +110,10 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   const isIndeterminate = selectedNodes.length > 0 && selectedNodes.length < collectAllNodeIds(topology).length;
 
   const filterTopology = (nodes, searchTerm, selectedTypes) => {
+    if (!searchTerm && selectedTypes.length === 0) {
+      return nodes; // ✅ Pri prázdnom filtri zobrazí všetko
+    }
+  
     return nodes
       .map((node) => {
         if (!node || !node.label) return null;
@@ -120,13 +124,16 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
         const filteredChildren = filterTopology(node.children || [], searchTerm, selectedTypes);
   
         if ((matchLabel && matchType) || filteredChildren.length > 0) {
-          return { ...node, children: filteredChildren, isHighlighted: searchTerm.length > 0 && matchLabel };
+          return {
+            ...node,
+            children: filteredChildren,
+            isHighlighted: matchLabel && matchType, // ✅ Pridá isHighlighted pre zhody
+          };
         }
         return null;
       })
       .filter(Boolean);
   };
-  
   
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -196,20 +203,28 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
 
   useEffect(() => {
     let expandedNodes = {};
+  
+    const expandAllNodes = (nodes) => {
+      nodes.forEach((node) => {
+        if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+          expandedNodes[node.id] = true;
+          expandAllNodes(node.children);
+        }
+      });
+    };
+  
     if (searchTerm || selectedTypes.length > 0) {
-      const expandNodes = (nodes) => {
-        nodes.forEach((node) => {
-          if (node.children && Array.isArray(node.children) && node.children.length > 0) {
-            expandedNodes[node.id] = true;
-            expandNodes(node.children);
-          }
-        });
-      };
-      expandNodes(filteredTopology);
+      // Ak je filter aktívny, rozbalíme iba zhodujúce sa uzly
+      expandAllNodes(filteredTopology);
+    } else {
+      // Ak nie je filter aktívny, resetujeme expanded stav
+      expandedNodes = {};
     }
+  
     setExpanded(expandedNodes);
   }, [filteredTopology, searchTerm, selectedTypes]);
   
+
 
   const renderTree = (nodes = [], level = 0, parentColor = null) => {
     return nodes.map((node) => {
