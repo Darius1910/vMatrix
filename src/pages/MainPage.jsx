@@ -38,7 +38,7 @@ const MainPage = () => {
         sx={{ 
           height: '64px', 
           flexShrink: 0, 
-          backgroundColor: 'primary', // Magentová farba navbaru
+          backgroundColor: '#e20074', // Magentová farba navbaru
           color: 'white', // Biela farba textu
         }}
       >

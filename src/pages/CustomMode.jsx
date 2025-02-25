@@ -56,6 +56,9 @@ const CustomModePage = () => {
             width: 40,
             height: 40,
             boxShadow: 3,
+            '&:hover': {
+              backgroundColor: '#c81e5b',
+            },
           }}
         >
           <ChevronRightIcon />

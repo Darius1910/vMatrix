@@ -112,10 +112,11 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   const filterTopology = (nodes, searchTerm, selectedTypes) => {
     return nodes
       .map((node) => {
-        if (!node || !node.label) return null; // Ochrana pred undefined label
+        if (!node || !node.label) return null;
   
-        const matchLabel = node.label.toLowerCase().includes(searchTerm.toLowerCase()); 
+        const matchLabel = node.label.toLowerCase().includes(searchTerm.toLowerCase());
         const matchType = selectedTypes.length === 0 || selectedTypes.includes(node.type);
+  
         const filteredChildren = filterTopology(node.children || [], searchTerm, selectedTypes);
   
         if ((matchLabel && matchType) || filteredChildren.length > 0) {
@@ -125,6 +126,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       })
       .filter(Boolean);
   };
+  
   
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -185,7 +187,12 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   }, [selectedOrg, orgs]);
   
   
-  const filteredTopology = filterTopology(topology, searchTerm, selectedTypes);
+  const filteredTopology = filterTopology(
+    topology.find(item => item.timeStamp === selectedTimestamp)?.children || topology,
+    searchTerm,
+    selectedTypes
+  );
+  
 
   useEffect(() => {
     let expandedNodes = {};
@@ -201,7 +208,8 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       expandNodes(filteredTopology);
     }
     setExpanded(expandedNodes);
-  }, [topology]);
+  }, [filteredTopology, searchTerm, selectedTypes]);
+  
 
   const renderTree = (nodes = [], level = 0, parentColor = null) => {
     return nodes.map((node) => {
@@ -425,12 +433,11 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     </Box>
   ) : (
     <List>
-      {renderTree(
-        topology.find(item => item.timeStamp === selectedTimestamp)?.children || topology
-      )}
+      {renderTree(filteredTopology)}
     </List>
   )}
 </Scrollbar>
+
     </Drawer>
   );
 };
