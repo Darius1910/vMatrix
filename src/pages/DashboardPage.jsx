@@ -12,69 +12,72 @@ const DashboardPage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
 
-  const transformTopology = (data, timestamp) => {
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      console.warn('Invalid or empty topology data:', data);
-      return [];
-    }
+const transformTopology = (data, timestamp) => {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    console.warn('Invalid or empty topology data:', data);
+    return [];
+  }
 
-    // Predpokladáme, že chceme pracovať s prvým záznamom v poli
-    const firstItem = data[0];
-    if (!firstItem.topology || !Array.isArray(firstItem.topology)) {
-      console.warn('No valid topology found in the data:', firstItem);
-      return [];
-    }
+  const firstItem = data[0];
+  if (!firstItem.topology || !Array.isArray(firstItem.topology)) {
+    console.warn('No valid topology found in the data:', firstItem);
+    return [];
+  }
 
-    // Nájdeme topológiu pre vybraný timestamp
-    const selectedTopology = firstItem.topology.find(item => item.timeStamp === timestamp);
-    if (!selectedTopology) {
-      console.warn('No topology found for selected timestamp:', timestamp);
-      return [];
-    }
+  const selectedTopology = firstItem.topology.find(item => item.timeStamp === timestamp);
+  if (!selectedTopology) {
+    console.warn('No topology found for selected timestamp:', timestamp);
+    return [];
+  }
 
-    console.log("Selected Topology:", selectedTopology);
+  console.log("Selected Topology:", selectedTopology);
 
-    return selectedTopology.data.map((org, index) => ({
-      id: `org-${index}`,
-      label: org.name || `vOrg-${index}`,
-      type: 'vOrg',
-      children: org.vdcs?.map((vdc, vdcIndex) => ({
-        id: `org-${index}-vdc-${vdcIndex}`,
-        label: vdc.name,
-        type: 'vDC',
-        children: [
-          ...(vdc.vapps?.map((vApp, vAppIndex) => ({
-            id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
-            label: vApp.name,
-            type: 'vApp',
-            children: vApp.details?.VirtualMachines?.map((vm, vmIndex) => ({
-              id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
-              label: vm.name,
-              type: 'VM',
-              children: vm.networks?.map((network, networkIndex) => ({
+  return selectedTopology.data.map((org, index) => ({
+    id: `org-${index}`,
+    label: org.name || `vOrg-${index}`,
+    type: 'vOrg',
+    children: org.vdcs?.map((vdc, vdcIndex) => ({
+      id: `org-${index}-vdc-${vdcIndex}`,
+      label: vdc.name,
+      type: 'vDC',
+      children: [
+        ...(vdc.vapps?.map((vApp, vAppIndex) => ({
+          id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}`,
+          label: vApp.name,
+          type: 'vApp',
+          children: vApp.details?.VirtualMachines?.map((vm, vmIndex) => ({
+            id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}`,
+            label: vm.name,
+            type: 'VM',
+            children: vm.networks?.map((network, networkIndex) => {
+              const edgeGatewayNode = network.networkType === "NAT_ROUTED" && network.natRoutedNetwork
+                ? {
+                    id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}-edgeGateway`,
+                    label: network.natRoutedNetwork.edgeGatewayName || 'Edge Gateway',
+                    type: 'EdgeGateway',
+                  }
+                : null;
+
+              return {
                 id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}`,
                 label: network.networkName,
                 type: 'Network',
-                children: network.edgeGateway
-                  ? [{
-                      id: `org-${index}-vdc-${vdcIndex}-vApp-${vAppIndex}-vm-${vmIndex}-network-${networkIndex}-edgeGateway`,
-                      label: network.edgeGateway.edgeGatewayName || 'Edge Gateway',
-                      type: 'EdgeGateway',
-                    }]
-                  : [],
-              })),
-            })),
-          })) || []),
-
-          ...(vdc.edgeGateways || []).map((edgeGateway, edgeGatewayIndex) => ({
-            id: `org-${index}-vdc-${vdcIndex}-edgeGateway-${edgeGatewayIndex}`,
-            label: edgeGateway.edgeGatewayName || `Edge Gateway ${edgeGatewayIndex}`,
-            type: 'EdgeGateway',
+                children: edgeGatewayNode ? [edgeGatewayNode] : [],
+              };
+            }),
           })),
-        ],
-      })) || [],
-    }));
-  };
+        })) || []),
+
+        ...(vdc.edgeGateways || []).map((edgeGateway, edgeGatewayIndex) => ({
+          id: `org-${index}-vdc-${vdcIndex}-edgeGateway-${edgeGatewayIndex}`,
+          label: edgeGateway.edgeGatewayName || `Edge Gateway ${edgeGatewayIndex}`,
+          type: 'EdgeGateway',
+        })),
+      ],
+    })) || [],
+  }));
+};
+
 
   // ✅ Fetch Data volá transformTopology
   const fetchData = async (uuid, timestamp) => {
