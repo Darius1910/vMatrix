@@ -62,6 +62,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   const [timestamps, setTimestamps] = useState([]);
   const [selectedTimestamp, setSelectedTimestamp] = useState('');
   const [topologyLoading, setTopologyLoading] = useState(false);
+  const [selectedCompareTimestamp, setSelectedCompareTimestamp] = useState('');
 
 
 
@@ -396,6 +397,12 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     onChange={(e) => {
       setSelectedTimestamp(e.target.value);
       if (fetchData) {
+        if (!Array.isArray(topology)) {
+          console.error("❌ Chyba: `topology` nie je pole!", topology);
+          return null; // Alebo iný vhodný fallback
+        }
+        
+        const selectedTopology = topology.find((item) => item.someCondition); // Pôvodný kód
         const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
         fetchData(selectedOrgUUID, e.target.value); // Fetch s UUID a timestampom
       } else {
@@ -435,6 +442,46 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     ))}
   </Select>
 </FormControl>
+
+<Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
+    Compare Timestamp
+  </Typography>
+<FormControl fullWidth size="small">
+  <Select
+    value={selectedCompareTimestamp} // Druhý timestamp
+    onChange={(e) => {
+      setSelectedCompareTimestamp(e.target.value);
+      if (fetchData) {
+        const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+        fetchData(selectedOrgUUID, selectedTimestamp, e.target.value); // Zavoláme porovnávací timestamp
+      } else {
+        console.error("fetchData is not defined");
+      }
+    }}
+    displayEmpty
+    fullWidth
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          maxHeight: '200px',
+          overflowY: 'auto',
+        },
+      },
+    }}
+  >
+    <MenuItem value="" disabled>
+      Select a comparison timestamp
+    </MenuItem>
+    {timestamps.map((ts) => (
+      <MenuItem key={ts} value={ts}>
+        {new Date(ts).toLocaleString()}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+
+
   </Box>
 ) : (
   <Typography sx={{ padding: 1 }}>No timestamps available</Typography>
