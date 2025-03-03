@@ -50,7 +50,7 @@ const typeColors = {
   EdgeGateway: '#455A64',
 };
 
-const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible, fetchData }) => {
+const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible, fetchData, fetchDataWithComparison }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -395,20 +395,17 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   <Select
     value={selectedTimestamp}
     onChange={(e) => {
+      console.log("📌 Selected timestamp:", e.target.value);
       setSelectedTimestamp(e.target.value);
       if (fetchData) {
-        if (!Array.isArray(topology)) {
-          console.error("❌ Chyba: `topology` nie je pole!", topology);
-          return null; // Alebo iný vhodný fallback
-        }
-        
-        const selectedTopology = topology.find((item) => item.someCondition); // Pôvodný kód
         const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
-        fetchData(selectedOrgUUID, e.target.value); // Fetch s UUID a timestampom
+        console.log("📌 Fetching data for UUID:", selectedOrgUUID, "Timestamp:", e.target.value);
+        fetchData(selectedOrgUUID, e.target.value);
       } else {
-        console.error("fetchData is not defined");
+        console.error("❌ fetchData is not defined");
       }
     }}
+    
     displayEmpty // ✅ Zobrazí "Select a timestamp", ak je hodnota prázdna
     fullWidth
     MenuProps={{
@@ -446,38 +443,32 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
 <Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
     Compare Timestamp
   </Typography>
-<FormControl fullWidth size="small">
+  <FormControl fullWidth size="small">
   <Select
-    value={selectedCompareTimestamp} // Druhý timestamp
-    onChange={(e) => {
-      setSelectedCompareTimestamp(e.target.value);
-      if (fetchData) {
-        const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
-        fetchData(selectedOrgUUID, selectedTimestamp, e.target.value); // Zavoláme porovnávací timestamp
-      } else {
-        console.error("fetchData is not defined");
-      }
-    }}
-    displayEmpty
-    fullWidth
-    MenuProps={{
-      PaperProps: {
-        sx: {
-          maxHeight: '200px',
-          overflowY: 'auto',
-        },
-      },
-    }}
-  >
-    <MenuItem value="" disabled>
-      Select a comparison timestamp
+  value={selectedCompareTimestamp}
+  onChange={(e) => {
+    setSelectedCompareTimestamp(e.target.value);
+    if (fetchDataWithComparison) {
+      const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+      console.log("📌 Comparing timestamps:", selectedTimestamp, "vs", e.target.value);
+      fetchDataWithComparison(selectedOrgUUID, selectedTimestamp, e.target.value);
+    } else {
+      console.error("❌ fetchDataWithComparison is not defined");
+    }
+  }}
+  displayEmpty
+  fullWidth
+>
+  <MenuItem value="" disabled>Select a comparison timestamp</MenuItem>
+  {timestamps.map((ts) => (
+    <MenuItem key={ts} value={ts}>
+      {new Date(ts).toLocaleString()}
     </MenuItem>
-    {timestamps.map((ts) => (
-      <MenuItem key={ts} value={ts}>
-        {new Date(ts).toLocaleString()}
-      </MenuItem>
-    ))}
-  </Select>
+  ))}
+</Select>
+
+
+
 </FormControl>
 
 

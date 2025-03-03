@@ -117,6 +117,8 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false }) => {
     rebuildTopology();
   }, [topology, selectedNodes]);
 
+  
+
   return (
     <div style={{ position: 'relative', height: '100%' }}>
       <div
