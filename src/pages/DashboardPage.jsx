@@ -10,6 +10,8 @@ const DashboardPage = () => {
   const [topologyData, setTopologyData] = useState([]);
   const [selectedNodes, setSelectedNodes] = useState(['org-0']);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [comparisonData, setComparisonData] = useState(null);
+
 
 
 const transformTopology = (data, timestamp) => {
@@ -106,6 +108,35 @@ const transformTopology = (data, timestamp) => {
     }
   };
   
+const fetchDataWithComparison = async (uuid, timestamp1, timestamp2) => {
+  try {
+    if (!uuid || !timestamp1 || !timestamp2) {
+      console.warn("No valid UUID or timestamps provided for comparison.");
+      return;
+    }
+
+    const response1 = await getAllTopologyByTimestamp(uuid, timestamp1);
+    const response2 = await getAllTopologyByTimestamp(uuid, timestamp2);
+
+    const data1 = response1.data;
+    const data2 = response2.data;
+
+    if (!data1 || !data2) {
+      console.warn("One of the timestamps has no data.");
+      return;
+    }
+
+    const transformedData1 = transformTopology(data1, timestamp1);
+    const transformedData2 = transformTopology(data2, timestamp2);
+
+    setTopologyData(transformedData1);
+    setComparisonData(transformedData2);
+  } catch (error) {
+    console.error("Failed to fetch comparison topology data:", error);
+  }
+};
+
+  
   
 
   useEffect(() => {
@@ -130,6 +161,7 @@ const transformTopology = (data, timestamp) => {
           sidebarVisible={sidebarVisible}
           setSidebarVisible={setSidebarVisible}
           fetchData={fetchData}
+          fetchDataWithComparison={fetchDataWithComparison}
         />
       </Box>
 
@@ -167,7 +199,7 @@ const transformTopology = (data, timestamp) => {
         }}
       >
         <ReactFlowProvider>
-          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes} />
+          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes}  comparisonData={comparisonData}/>
         </ReactFlowProvider>
       </Box>
     </div>

@@ -448,15 +448,8 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     value={selectedCompareTimestamp}
     onChange={(e) => {
       setSelectedCompareTimestamp(e.target.value);
-      if (fetchData) {
-        const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
-        console.log("📌 Comparing timestamps:", selectedTimestamp, "vs", e.target.value);
-
-        // 🟢 Tu zavoláme fetchDataWithComparison na porovnanie timestampov
-        fetchDataWithComparison(selectedOrgUUID, selectedTimestamp, e.target.value);
-      } else {
-        console.error("❌ fetchData is not defined");
-      }
+      const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+      fetchDataWithComparison(selectedOrgUUID, selectedTimestamp, e.target.value);
     }}
     displayEmpty
     fullWidth

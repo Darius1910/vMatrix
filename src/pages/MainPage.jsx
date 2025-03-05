@@ -114,7 +114,8 @@ const MainPage = () => {
         onClose={handleMenuClose}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        sx={{ mt: 1 }}
+        sx={{ mt: 1, zIndex: 100000 }}
+        
       >
         <MenuItem disabled>
           <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
