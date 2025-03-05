@@ -88,7 +88,7 @@ const RegistrationPage = () => {
             Register
           </Typography>
           {successMessage && (
-            <Typography color="success" variant="body2" sx={{ marginBottom: '10px' }}>
+            <Typography color="success" variant="body2" sx={{ marginTop: '10px' }}>
               {successMessage}
             </Typography>
           )}

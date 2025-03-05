@@ -406,7 +406,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       }
     }}
     
-    displayEmpty // ✅ Zobrazí "Select a timestamp", ak je hodnota prázdna
+    displayEmpty
     fullWidth
     MenuProps={{
       PaperProps: {
@@ -445,33 +445,48 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   </Typography>
   <FormControl fullWidth size="small">
   <Select
-  value={selectedCompareTimestamp}
-  onChange={(e) => {
-    setSelectedCompareTimestamp(e.target.value);
-    if (fetchDataWithComparison) {
-      const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
-      console.log("📌 Comparing timestamps:", selectedTimestamp, "vs", e.target.value);
-      fetchDataWithComparison(selectedOrgUUID, selectedTimestamp, e.target.value);
-    } else {
-      console.error("❌ fetchDataWithComparison is not defined");
-    }
-  }}
-  displayEmpty
-  fullWidth
->
-  <MenuItem value="" disabled>Select a comparison timestamp</MenuItem>
-  {timestamps.map((ts) => (
-    <MenuItem key={ts} value={ts}>
-      {new Date(ts).toLocaleString()}
-    </MenuItem>
-  ))}
-</Select>
+    value={selectedCompareTimestamp}
+    onChange={(e) => {
+      setSelectedCompareTimestamp(e.target.value);
+      if (fetchData) {
+        const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+        console.log("📌 Comparing timestamps:", selectedTimestamp, "vs", e.target.value);
 
-
-
+        // 🟢 Tu zavoláme fetchDataWithComparison na porovnanie timestampov
+        fetchDataWithComparison(selectedOrgUUID, selectedTimestamp, e.target.value);
+      } else {
+        console.error("❌ fetchData is not defined");
+      }
+    }}
+    displayEmpty
+    fullWidth
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          maxHeight: '200px',
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#e20074',
+            borderRadius: '10px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(0, 0, 0, 0.05)',
+          },
+        },
+      },
+    }}
+  >
+    <MenuItem value="" disabled>Select a comparison timestamp</MenuItem>
+    {timestamps.map((ts) => (
+      <MenuItem key={ts} value={ts}>
+        {new Date(ts).toLocaleString()}
+      </MenuItem>
+    ))}
+  </Select>
 </FormControl>
-
-
 
   </Box>
 ) : (

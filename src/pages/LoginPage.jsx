@@ -35,12 +35,24 @@ const LoginPage = () => {
   
     try {
       await login(username, password);
-      navigate('/main/dash'); // Redirect on success
+      navigate('/main/dash');
     } catch (err) {
-      console.log("🔴 Login error received:", err.response?.data?.errors);
-  
-      const backendErrors = err.response?.data?.errors || {};
-      setFieldErrors(backendErrors);
+      console.log('🔴 Login error received:', err.response?.data?.message);
+      
+      const errorMessage = err.response?.data?.message || 'An unknown error occurred';
+      
+      if (errorMessage === 'Username and password are required') {
+        setFieldErrors({ username: 'Username is required', password: 'Password is required' });
+      } else if (errorMessage === 'Username does not exist') {
+        setFieldErrors({ username: 'Username does not exist', password: '' });
+      } else if (errorMessage === 'Incorrect password') {
+        setFieldErrors({ username: '', password: 'Incorrect password' });
+      }
+      else if (errorMessage === 'Your account is disabled. Please contact support.') {
+        setFieldErrors({ username: 'Your account is disabled. Please contact support.', password: '' });
+      }  else {
+        setGeneralError('An unexpected error occurred. Please try again later.');
+      }
     }
   };
   
