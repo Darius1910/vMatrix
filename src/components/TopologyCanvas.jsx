@@ -21,6 +21,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import DiffNavigator from './DiffNavigator';
 import yaml from 'js-yaml';
 
 const typeIcons = {
@@ -70,7 +71,7 @@ const getDagreLayoutedNodesAndEdges = (nodes, edges, direction = 'TB') => {
   return { nodes: layoutedNodes, edges };
 };
 
-const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, comparisonData = null  }) => {
+const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, comparisonData = null, rawTopologyData  }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView } = useReactFlow();
@@ -80,8 +81,8 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [disableDragging, setDisableDragging] = useState(false);
 
-  const [size, setSize] = useState({ width: 400, height: 300 });
-  const [position, setPosition] = useState({ x: 1000, y: 5 });
+  const [size, setSize] = useState({ width: 800, height: 500 });
+  const [position, setPosition] = useState({ x: 700, y: 5 });
   const draggingRef = useRef(false);
   
   const titleBarRef = useRef(null);
@@ -93,24 +94,24 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
   const rebuildTopology = () => {
     setNodes([]);
     setEdges([]);
-
+  
     if (!topology || selectedNodes.length === 0) {
       fitView({ padding: 0.3 });
       return;
     }
-
+  
     const newNodes = [];
     const newEdges = [];
-
+  
     const traverseTopology = (node) => {
       if (selectedNodes.includes(node.id)) {
         newNodes.push({
           id: node.id,
-          data: { label: node.label },
+          data: { label: node.label }, 
           style: { backgroundColor: typeColors[node.type] || '#cccccc' },
           position: { x: 0, y: 0 },
         });
-
+  
         node.children?.forEach((child) => {
           if (selectedNodes.includes(child.id)) {
             newEdges.push({
@@ -124,16 +125,17 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
         });
       }
     };
-
+  
     topology.forEach(traverseTopology);
-
+  
     const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayoutedNodesAndEdges(newNodes, newEdges);
-
+  
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
-
+  
     setTimeout(() => fitView({ padding: 0.3 }), 100);
   };
+  
 
   useEffect(() => {
     rebuildTopology();
@@ -142,28 +144,31 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
  // Konvertuje topológiu do YAML
  const convertToYaml = (data) => yaml.dump(data, { indent: 2 });
 
- // Porovnanie YAML topológií
  useEffect(() => {
-  if (!comparisonData) return;
+  console.log("📊 comparisonData updated:", comparisonData);
+  console.log("📊 rawTopologyData (base data):", rawTopologyData);
+  
+  if (!comparisonData || !rawTopologyData) return;
 
   const dmp = new DiffMatchPatch.diff_match_patch();
-  const yaml1 = convertToYaml(topology);
+  const yaml1 = convertToYaml(rawTopologyData);
   const yaml2 = convertToYaml(comparisonData);
 
   const diff = dmp.diff_main(yaml1, yaml2);
   dmp.diff_cleanupSemantic(diff);
 
-  // HTML formatovanie pre <del> a <ins> s farebným zvýraznením
+  // Detect if Dark Mode is enabled
+  const isDarkMode = theme.palette.mode === 'dark';
+
   let formattedDiff = diff.map(([op, text]) => {
-    if (op === -1) return `<del style="background-color:#ffebe6; text-decoration:none;">${text}</del>`; // Červené pre odstránené
-    if (op === 1) return `<ins style="background-color:#e6ffed; text-decoration:none;">${text}</ins>`; // Zelené pre pridané
-    return text; // Nezmenené
+    if (op === -1) return `<del style="background-color:${isDarkMode ? '#6e0b0b' : '#ffebe6'}; color: ${isDarkMode ? '#ff8383' : '#b00020'}; text-decoration: none;">${text}</del>`;
+    if (op === 1) return `<ins style="background-color:${isDarkMode ? '#093d09' : '#e6ffed'}; color: ${isDarkMode ? '#92ff92' : '#007500'}; text-decoration: none;">${text}</ins>`;
+    return text;
   }).join('');
 
   setComparisonResult(formattedDiff);
   setShowComparison(true);
-}, [comparisonData]);
-
+}, [comparisonData, rawTopologyData, theme]);
 
   const handleMouseUp = () => {
     setDisableDragging(false);
@@ -270,8 +275,8 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
         <Rnd
           size={size}
           position={position}
-          minWidth={300}
-          minHeight={200}
+          minWidth={700}
+          minHeight={500}
           bounds="window"
           enableResizing={!isFullscreen}
           dragHandleClassName="drag-handle"
@@ -283,8 +288,8 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
             setPosition({ x: d.x, y: d.y });
           }}
           style={{
-            position: 'absolute', // ✅ GARANTUJEME, ŽE BUDE NAVRCHU
-            zIndex: 99999, // ✅ TERAZ JE NAVRCHU VŠETKÉHO
+            position: 'absolute',
+            zIndex: 99999,
           }}
         >
           <Paper
@@ -298,7 +303,7 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
               boxShadow: isFullscreen ? '0px 0px 10px rgba(0,0,0,0.5)' : 'none',
             }}
           >
-            {/* ✅ Presúvať len kliknutím na horný panel */}
+            {/* ✅ Horný panel na presúvanie */}
             <div
               ref={titleBarRef}
               className="drag-handle"
@@ -310,7 +315,6 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
                 color: 'white',
                 padding: '5px 10px',
                 cursor: 'move',
-                borderBottom: isFullscreen ? '2px solid #FFF' : 'none',
               }}
             >
               <span>Topology Comparison</span>
@@ -327,18 +331,34 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
               </div>
             </div>
 
-            <div
+            {/* ✅ Hlavný obsah - Diff + Navigátor */}
+            <div style={{ display: 'flex', height: 'calc(100% - 40px)' }}>
+              {/* 🔹 Porovnávací text (Diff) */}
+              <div
+              className="comparison-container"
               style={{
+                flex: 1,
                 padding: '10px',
                 overflow: 'auto',
-                height: 'calc(100% - 40px)',
                 fontFamily: 'monospace',
                 whiteSpace: 'pre-wrap',
+                maxHeight: '100%', 
               }}
               dangerouslySetInnerHTML={{ __html: comparisonResult }}
             />
+              
+              {/* 🔹 Navigátor zmien */}
+              <div
+                style={{
+                  width: '300px',
+                }}
+              >
+                <DiffNavigator comparisonResult={comparisonResult} />
+              </div>
+            </div>
           </Paper>
         </Rnd>
+
       )}
     </div>
   );

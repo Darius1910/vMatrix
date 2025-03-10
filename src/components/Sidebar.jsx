@@ -30,7 +30,7 @@ import Scrollbar from '../components/Scrollbar';
 import { useTheme } from '@mui/material/styles';
 import { getOrgs, getAllTopology } from '../api'; // Assuming the same API call is used
 
-const drawerWidth = 300;
+const drawerWidth = 340;
 
 const typeIcons = {
   vOrg: CloudOutlinedIcon,
@@ -225,8 +225,6 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     setExpanded(expandedNodes);
   }, [filteredTopology, searchTerm, selectedTypes]);
   
-
-
   const renderTree = (nodes = [], level = 0, parentColor = null) => {
     return nodes.map((node) => {
       if (!node || !node.id || !node.label) return null;
@@ -249,7 +247,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
               backgroundColor: isHighlighted ? 'rgba(33, 150, 243, 0.2)' : 'inherit',
               '&:hover': { backgroundColor: isHighlighted ? 'rgba(33, 150, 243, 0.3)' : theme.palette.action.hover, borderRadius: '4px' },
               borderLeft: level > 0 ? `4px solid ${color}` : 'none',
-              paddingLeft: level > 0 ? `${8 * level}px` : '8px', // Zväčšuje odsadenie podľa úrovne
+              paddingLeft: level > 0 ? `${8 * level}px` : '8px',
             }}
           >
             <ListItemIcon sx={{ minWidth: '28px' }}>
@@ -260,9 +258,9 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
               onChange={(e) => handleCheckboxChange(nodeId, e)}
               size="small"
             />
-            <Tooltip title={node.label} arrow>
+            <Tooltip title={node.label} arrow> 
               <ListItemText
-                primary={node.label}
+                primary={node.label} 
                 sx={{
                   whiteSpace: 'normal',
                   overflow: 'visible',
@@ -289,7 +287,6 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     });
   };
   
-
   return (
     <Drawer
       variant="persistent"
