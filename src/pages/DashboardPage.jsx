@@ -259,7 +259,7 @@ const DashboardPage = () => {
         }}
       >
         <ReactFlowProvider>
-          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes}  comparisonData={comparisonData} rawTopologyData={rawTopologyData}/>
+          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes}  comparisonData={comparisonData} rawTopologyData={rawTopologyData} sidebarVisible={sidebarVisible} />
         </ReactFlowProvider>
       </Box>
     </div>

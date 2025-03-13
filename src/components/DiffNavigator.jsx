@@ -76,7 +76,6 @@ const DiffNavigator = ({ comparisonResult, parentSize = { width: 300, height: 50
             return (
               <React.Fragment key={index}>
                 <ListItem
-                  button
                   onClick={() => goToChange(index)}
                   selected={currentIndex === index}
                   sx={{
@@ -85,6 +84,7 @@ const DiffNavigator = ({ comparisonResult, parentSize = { width: 300, height: 50
                     borderLeft: currentIndex === index ? '4px solid #d81b60' : 'none',
                     paddingLeft: currentIndex === index ? '12px' : '16px',
                     color: isDarkMode ? '#ffffff' : '#000000',
+                    cursor: 'pointer' // 👈 Pridáva vizuálny efekt klikateľnosti
                   }}
                 >
                   <IconButton size="small" sx={{ color: isAddition ? 'green' : 'red' }}>

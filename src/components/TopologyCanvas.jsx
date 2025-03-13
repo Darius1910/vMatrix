@@ -71,7 +71,7 @@ const getDagreLayoutedNodesAndEdges = (nodes, edges, direction = 'TB') => {
   return { nodes: layoutedNodes, edges };
 };
 
-const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, comparisonData = null, rawTopologyData  }) => {
+const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, comparisonData = null, rawTopologyData, sidebarVisible  }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView } = useReactFlow();
@@ -82,7 +82,10 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
   const [disableDragging, setDisableDragging] = useState(false);
 
   const [size, setSize] = useState({ width: 800, height: 500 });
-  const [position, setPosition] = useState({ x: 700, y: 5 });
+  const sidebarWidth = sidebarVisible ? 350 : 0;
+  const [position, setPosition] = useState({ x: window.innerWidth - sidebarWidth - 810, y: 5 });
+  
+
   const draggingRef = useRef(false);
   
   const titleBarRef = useRef(null);
@@ -181,18 +184,17 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
 
  const toggleFullscreen = () => {
   if (!isFullscreen) {
-    // Uložíme predchádzajúcu veľkosť a pozíciu pred maximalizáciou
     prevSizeRef.current = size;
     prevPositionRef.current = position;
     setSize({ width: '100%', height: '100%' });
     setPosition({ x: 0, y: 0 });
   } else {
-    // Obnovíme predchádzajúcu veľkosť a pozíciu po odmaximalizovaní
     setSize(prevSizeRef.current);
     setPosition(prevPositionRef.current);
   }
   setIsFullscreen(!isFullscreen);
 };
+
 
  useEffect(() => {
   document.addEventListener('mousemove', handleMouseMove);
@@ -202,6 +204,13 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
     document.removeEventListener('mouseup', handleMouseUp);
   };
 }, []);
+
+useEffect(() => {
+  if (!isFullscreen) {
+    setPosition({ x: window.innerWidth - (sidebarVisible ? 350 : 0) - 810, y: 5 });
+  }
+}, [sidebarVisible, isFullscreen]);
+
 
   return (
     <div style={{ position: 'relative', height: '100%' }}>
