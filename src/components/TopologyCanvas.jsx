@@ -154,40 +154,35 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
  // Konvertuje topológiu do YAML
  const convertToYaml = (data) => yaml.dump(data, { indent: 2 });
 
- const prevTimestamp = useRef(null);
- const prevCompareTimestamp = useRef(null);
-
  useEffect(() => {
   console.log("📊 comparisonData updated:", comparisonData);
   console.log("📊 rawTopologyData (base data):", rawTopologyData);
 
-  if (
-    comparisonData && rawTopologyData &&  // ✅ Comparison sa vykoná len ak existujú dáta
-    (selectedTimestamp !== prevTimestamp.current || selectedCompareTimestamp !== prevCompareTimestamp.current) // ✅ Spustí sa iba ak sa timestampy zmenia
-  ) {
-    const dmp = new DiffMatchPatch.diff_match_patch();
-    const yaml1 = convertToYaml(rawTopologyData);
-    const yaml2 = convertToYaml(comparisonData);
-  
-    const diff = dmp.diff_main(yaml1, yaml2);
-    dmp.diff_cleanupSemantic(diff);
-  
-    // Detect if Dark Mode is enabled
-    const isDarkMode = theme.palette.mode === 'dark';
-  
-    let formattedDiff = diff.map(([op, text]) => {
-      if (op === -1) return `<del style="background-color:${isDarkMode ? '#6e0b0b' : '#ffebe6'}; color: ${isDarkMode ? '#ff8383' : '#b00020'}; text-decoration: none;">${text}</del>`;
-      if (op === 1) return `<ins style="background-color:${isDarkMode ? '#093d09' : '#e6ffed'}; color: ${isDarkMode ? '#92ff92' : '#007500'}; text-decoration: none;">${text}</ins>`;
-      return text;
-    }).join('');
-  
-    setComparisonResult(formattedDiff);
-    setShowComparison(true);
+  if (comparisonData && rawTopologyData) {
+      console.log("📊 Updating comparison...");
 
-    prevTimestamp.current = selectedTimestamp;
-    prevCompareTimestamp.current = selectedCompareTimestamp;
+      setTimeout(() => {
+          const dmp = new DiffMatchPatch.diff_match_patch();
+          const yaml1 = convertToYaml(rawTopologyData);
+          const yaml2 = convertToYaml(comparisonData);
+
+          const diff = dmp.diff_main(yaml1, yaml2);
+          dmp.diff_cleanupSemantic(diff);
+
+          const isDarkMode = theme.palette.mode === 'dark';
+
+          let formattedDiff = diff.map(([op, text]) => {
+              if (op === -1) return `<del style="background-color:${isDarkMode ? '#6e0b0b' : '#ffebe6'}; color: ${isDarkMode ? '#ff8383' : '#b00020'}; text-decoration: none;">${text}</del>`;
+              if (op === 1) return `<ins style="background-color:${isDarkMode ? '#093d09' : '#e6ffed'}; color: ${isDarkMode ? '#92ff92' : '#007500'}; text-decoration: none;">${text}</ins>`;
+              return text;
+          }).join('');
+
+          setComparisonResult(formattedDiff);
+          setShowComparison(true);  // ✅ Comparison okno sa znova zobrazí
+      }, 0);
   }
-}, [comparisonData, rawTopologyData, theme, selectedTimestamp, selectedCompareTimestamp]);
+}, [comparisonData, rawTopologyData]);
+
 
 
   const handleMouseUp = () => {

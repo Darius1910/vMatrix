@@ -216,29 +216,29 @@ const DashboardPage = () => {
   
   const fetchDataWithComparison = async (uuid, timestamp1, timestamp2) => {
     console.log(`🕒 Fetching comparison for timestamps: ${timestamp1} vs ${timestamp2}`);
-    
+
     try {
-      if (!uuid || !timestamp1 || !timestamp2) {
-        console.warn("⚠️ No valid UUID or timestamps provided for comparison.");
-        return;
-      }
+        if (!uuid || !timestamp1 || !timestamp2) {
+            console.warn("⚠️ No valid UUID or timestamps provided for comparison.");
+            return;
+        }
 
-      const response2 = await getAllTopologyByTimestamp(uuid, timestamp2);
-      const data2 = response2.data;
+        const response2 = await getAllTopologyByTimestamp(uuid, timestamp2);
+        const data2 = response2.data;
 
-      if (!data2) {
-        console.warn("⚠️ No data found for second timestamp.");
-        return;
-      }
+        if (!data2) {
+            console.warn("⚠️ No data found for second timestamp.");
+            return;
+        }
 
-      const transformedData2 = transformTopologyForComparison(data2, timestamp2);
+        const transformedData2 = transformTopologyForComparison(data2, timestamp2);
 
-      console.log("✅ rawTopologyData (first timestamp):", rawTopologyData);
-      console.log("✅ comparisonData (second timestamp):", transformedData2);
+        console.log("✅ rawTopologyData (first timestamp):", rawTopologyData);
+        console.log("✅ comparisonData (second timestamp):", transformedData2);
 
-      setComparisonData(transformedData2); // ✅ This must trigger the `useEffect` in `TopologyCanvas.jsx`
+        setComparisonData(transformedData2); // ✅ Okamžite aplikujeme nové comparison dáta
     } catch (error) {
-      console.error("❌ Failed to fetch comparison topology data:", error);
+        console.error("❌ Failed to fetch comparison topology data:", error);
     }
 };
 
