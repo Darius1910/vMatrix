@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo  } from 'react';
 import {
   Drawer,
   Box,
@@ -17,9 +17,10 @@ import {
   MenuItem,
   Typography,
   Divider,
-  CircularProgress
+  CircularProgress,
+  Autocomplete,
 } from '@mui/material';
-import { ExpandLess, ExpandMore, ChevronLeft } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, ChevronLeft,} from '@mui/icons-material';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
 import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
@@ -28,7 +29,7 @@ import NetworkCheckOutlinedIcon from '@mui/icons-material/NetworkCheckOutlined';
 import RouterOutlinedIcon from '@mui/icons-material/RouterOutlined';
 import Scrollbar from '../components/Scrollbar';
 import { useTheme } from '@mui/material/styles';
-import { getOrgs, getAllTopology } from '../api'; // Assuming the same API call is used
+import { getOrgs, getAllTopology } from '../api'; 
 
 const drawerWidth = 340;
 
@@ -61,16 +62,10 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   const [allTopology, setAllTopology] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
   const [topologyLoading, setTopologyLoading] = useState(false);
-
-
-
+  const [showExtraOptions, setShowExtraOptions] = useState(true);
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const handleTypeFilterChange = (event) => {
-    setSelectedTypes(event.target.value);
   };
 
   const handleCheckboxChange = (id, e) => {
@@ -109,7 +104,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   const isAllSelected = selectedNodes.length > 0 && selectedNodes.length === collectAllNodeIds(topology).length;
   const isIndeterminate = selectedNodes.length > 0 && selectedNodes.length < collectAllNodeIds(topology).length;
 
-  const filterTopology = (nodes, searchTerm, selectedTypes) => {
+  const filterTopology = useCallback((nodes, searchTerm, selectedTypes) => {
     if (!searchTerm && selectedTypes.length === 0) {
       return nodes; // ✅ Pri prázdnom filtri zobrazí všetko
     }
@@ -133,7 +128,7 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
         return null;
       })
       .filter(Boolean);
-  };
+  }, []);
   
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -194,13 +189,14 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   }, [selectedOrg, orgs]);
   
   
-  const filteredTopology = filterTopology(
-    topology.find(item => item.timeStamp === selectedTimestamp)?.children || topology,
-    searchTerm,
-    selectedTypes
-  );
+  const filteredTopology = useMemo(() => {
+    return filterTopology(
+      topology.find(item => item.timeStamp === selectedTimestamp)?.children || topology,
+      searchTerm,
+      selectedTypes
+    );
+  }, [topology, selectedTimestamp, searchTerm, JSON.stringify(selectedTypes)]);
   
-
   useEffect(() => {
     let expandedNodes = {};
   
@@ -214,15 +210,13 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
     };
   
     if (searchTerm || selectedTypes.length > 0) {
-      // Ak je filter aktívny, rozbalíme iba zhodujúce sa uzly
       expandAllNodes(filteredTopology);
-    } else {
-      // Ak nie je filter aktívny, resetujeme expanded stav
-      expandedNodes = {};
     }
   
     setExpanded(expandedNodes);
-  }, [filteredTopology, searchTerm, selectedTypes]);
+  }, [filteredTopology, searchTerm, JSON.stringify(selectedTypes)]);
+  
+  
   
   const renderTree = (nodes = [], level = 0, parentColor = null) => {
     return nodes.map((node) => {
@@ -317,32 +311,101 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
       </Box>
       <Divider sx={{ backgroundColor: theme.palette.divider }} />
 
-      <Box sx={{ paddingX: 1, paddingTop:1 }}>
-        <TextField fullWidth variant="outlined" size="small" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+      <Box sx={{ paddingY:'5px',  borderBottom: `1px solid ${theme.palette.divider}`}}>
+      <Box sx={{  display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="caption" sx={{ color: 'gray', marginRight: 1 }}>
+          {showExtraOptions ? "Show less" : "Show more"}
+        </Typography>
+        <IconButton onClick={() => setShowExtraOptions(!showExtraOptions)} size="small">
+          {showExtraOptions ? <ExpandLess /> : <ExpandMore />}
+        </IconButton>
       </Box>
 
-      <Box sx={{ paddingX: 1, }}>
-      <Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
-        Filter
-      </Typography>
-        <FormControl fullWidth size="small">
-          <Select multiple value={selectedTypes} onChange={handleTypeFilterChange}>
-            {Object.keys(typeIcons).map((type) => (
-              <MenuItem key={type} value={type}>{type}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+      <Collapse in={showExtraOptions} timeout="auto" unmountOnExit>
+          <Box sx={{ paddingX: 1, paddingTop:1 }}>
+            <TextField fullWidth variant="outlined" size="small" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </Box>
 
-      <Box sx={{ paddingX: 1, display: 'flex', alignItems: 'center' }}>
-        <Checkbox checked={isAllSelected} indeterminate={isIndeterminate} onChange={handleSelectAllChange} />
-        <Typography variant="body2">Select All</Typography>
-      </Box>
+          <Box sx={{ paddingX: 1, pt: 1 }}>
+          <FormControl fullWidth size="small">
+            <Autocomplete
+              multiple
+              options={Object.keys(typeIcons)}
+              value={selectedTypes}
+              onChange={(event, newValue) => setSelectedTypes(newValue)}
+              renderInput={(params) => <TextField {...params} label="Filter" variant="outlined" />}
+            />
+          </FormControl>
+          </Box>
 
+          <Box sx={{ paddingX: 1, display: 'flex', alignItems: 'center' }}>
+            <Checkbox checked={isAllSelected} indeterminate={isIndeterminate} onChange={handleSelectAllChange} />
+            <Typography variant="body2">Select All</Typography>
+          </Box>
+
+          <Box sx={{ paddingX: 1 }}>
+          <Select
+            value={selectedOrg}
+            onChange={(e) => setSelectedOrg(e.target.value)}
+            displayEmpty
+            fullWidth
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  '&::-webkit-scrollbar': {
+                    width: '8px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: '#e20074',
+                    borderRadius: '10px',
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    background: 'rgba(0, 0, 0, 0.05)',
+                  },
+                },
+              },
+            }}
+          >
+          <MenuItem value="" disabled>Select an organization</MenuItem>
+          {orgsLoading ? (
+            <MenuItem disabled>
+              <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                <CircularProgress size={24} />
+              </Box>
+            </MenuItem>
+          ) : (
+            orgs.map((org) => (
+              <MenuItem key={org.uuid} value={org.name}>
+                {org.name}
+              </MenuItem>
+            ))
+          )}
+            </Select>
+          </Box>
+
+          {timestamps.length > 0 ? (
       <Box sx={{ paddingX: 1 }}>
+
+    <Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
+        Timestamp
+      </Typography>
+    <FormControl fullWidth size="small">
       <Select
-        value={selectedOrg}
-        onChange={(e) => setSelectedOrg(e.target.value)}
+        value={selectedTimestamp}
+        onChange={(e) => {
+          console.log("📌 Selected timestamp:", e.target.value);
+          setSelectedTimestamp(e.target.value);
+          if (fetchData) {
+            const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+            console.log("📌 Fetching data for UUID:", selectedOrgUUID, "Timestamp:", e.target.value);
+            fetchData(selectedOrgUUID, e.target.value);
+          } else {
+            console.error("❌ fetchData is not defined");
+          }
+        }}
+        
         displayEmpty
         fullWidth
         MenuProps={{
@@ -364,123 +427,66 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
           },
         }}
       >
-      <MenuItem value="" disabled>Select an organization</MenuItem>
-      {orgsLoading ? (
-        <MenuItem disabled>
-          <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-            <CircularProgress size={24} />
-          </Box>
+        {/* ✅ Predvolená možnosť */}
+        <MenuItem value="" disabled>
+          Select a timestamp
         </MenuItem>
-      ) : (
-        orgs.map((org) => (
-          <MenuItem key={org.uuid} value={org.name}>
-            {org.name}
+
+        {timestamps.map((ts) => (
+          <MenuItem key={ts} value={ts}>
+            {new Date(ts).toLocaleString()}
           </MenuItem>
-        ))
-      )}
-        </Select>
+        ))}
+      </Select>
+    </FormControl>
+
+    <Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
+        Compare Timestamp
+      </Typography>
+      <FormControl fullWidth size="small">
+      <Select
+        value={selectedCompareTimestamp}
+        onChange={(e) => {
+          setSelectedCompareTimestamp(e.target.value);
+          const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
+          fetchDataWithComparison(selectedOrgUUID, selectedTimestamp, e.target.value);
+        }}
+        displayEmpty
+        fullWidth
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              maxHeight: '200px',
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#e20074',
+                borderRadius: '10px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: 'rgba(0, 0, 0, 0.05)',
+              },
+            },
+          },
+        }}
+      >
+        <MenuItem value="" disabled>Select a comparison timestamp</MenuItem>
+        {timestamps.map((ts) => (
+          <MenuItem key={ts} value={ts}>
+            {new Date(ts).toLocaleString()}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+
       </Box>
-
-      {timestamps.length > 0 ? (
-  <Box sx={{ paddingX: 1 }}>
-
-<Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
-    Timestamp
-  </Typography>
-<FormControl fullWidth size="small">
-  <Select
-    value={selectedTimestamp}
-    onChange={(e) => {
-      console.log("📌 Selected timestamp:", e.target.value);
-      setSelectedTimestamp(e.target.value);
-      if (fetchData) {
-        const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
-        console.log("📌 Fetching data for UUID:", selectedOrgUUID, "Timestamp:", e.target.value);
-        fetchData(selectedOrgUUID, e.target.value);
-      } else {
-        console.error("❌ fetchData is not defined");
-      }
-    }}
-    
-    displayEmpty
-    fullWidth
-    MenuProps={{
-      PaperProps: {
-        sx: {
-          maxHeight: '200px',
-          overflowY: 'auto',
-          '&::-webkit-scrollbar': {
-            width: '8px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#e20074',
-            borderRadius: '10px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: 'rgba(0, 0, 0, 0.05)',
-          },
-        },
-      },
-    }}
-  >
-    {/* ✅ Predvolená možnosť */}
-    <MenuItem value="" disabled>
-      Select a timestamp
-    </MenuItem>
-
-    {timestamps.map((ts) => (
-      <MenuItem key={ts} value={ts}>
-        {new Date(ts).toLocaleString()}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
-
-<Typography variant="caption" sx={{ color: 'gray', marginBottom: '4px' }}>
-    Compare Timestamp
-  </Typography>
-  <FormControl fullWidth size="small">
-  <Select
-    value={selectedCompareTimestamp}
-    onChange={(e) => {
-      setSelectedCompareTimestamp(e.target.value);
-      const selectedOrgUUID = orgs.find(org => org.name === selectedOrg)?.uuid;
-      fetchDataWithComparison(selectedOrgUUID, selectedTimestamp, e.target.value);
-    }}
-    displayEmpty
-    fullWidth
-    MenuProps={{
-      PaperProps: {
-        sx: {
-          maxHeight: '200px',
-          overflowY: 'auto',
-          '&::-webkit-scrollbar': {
-            width: '8px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#e20074',
-            borderRadius: '10px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: 'rgba(0, 0, 0, 0.05)',
-          },
-        },
-      },
-    }}
-  >
-    <MenuItem value="" disabled>Select a comparison timestamp</MenuItem>
-    {timestamps.map((ts) => (
-      <MenuItem key={ts} value={ts}>
-        {new Date(ts).toLocaleString()}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
-
-  </Box>
-) : (
-  <Typography sx={{ padding: 1 }}>No timestamps available</Typography>
-)}
+    ) : (
+      <Typography sx={{ padding: 1 }}>No timestamps available</Typography>
+    )}
+      </Collapse>
+      </Box>
 
 
 <Scrollbar style={{ flexGrow: 1 }}>
