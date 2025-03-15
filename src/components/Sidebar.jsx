@@ -50,7 +50,7 @@ const typeColors = {
   EdgeGateway: '#455A64',
 };
 
-const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible, fetchData, fetchDataWithComparison }) => {
+const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarVisible, setSidebarVisible, fetchData, fetchDataWithComparison,   selectedTimestamp,setSelectedTimestamp,selectedCompareTimestamp,setSelectedCompareTimestamp }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,9 +60,8 @@ const Sidebar = ({ topology = [], selectedNodes = [], setSelectedNodes, sidebarV
   const [orgsLoading, setOrgsLoading] = useState(false);
   const [allTopology, setAllTopology] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
-  const [selectedTimestamp, setSelectedTimestamp] = useState('');
   const [topologyLoading, setTopologyLoading] = useState(false);
-  const [selectedCompareTimestamp, setSelectedCompareTimestamp] = useState('');
+
 
 
 

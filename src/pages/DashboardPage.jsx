@@ -12,6 +12,9 @@ const DashboardPage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [rawTopologyData, setRawTopologyData] = useState([]);
   const [comparisonData, setComparisonData] = useState(null);
+  const [selectedTimestamp, setSelectedTimestamp] = useState('');
+  const [selectedCompareTimestamp, setSelectedCompareTimestamp] = useState('');
+
 
   const transformTopologyForVisualization = (data, timestamp) => {
     if (!data || !Array.isArray(data) || data.length === 0) {
@@ -262,6 +265,10 @@ const DashboardPage = () => {
           setSidebarVisible={setSidebarVisible}
           fetchData={fetchData}
           fetchDataWithComparison={fetchDataWithComparison}
+          selectedTimestamp={selectedTimestamp}  
+          setSelectedTimestamp={setSelectedTimestamp}  
+          selectedCompareTimestamp={selectedCompareTimestamp} 
+          setSelectedCompareTimestamp={setSelectedCompareTimestamp}
         />
       </Box>
 
@@ -299,7 +306,8 @@ const DashboardPage = () => {
         }}
       >
         <ReactFlowProvider>
-          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes}  comparisonData={comparisonData} rawTopologyData={rawTopologyData} sidebarVisible={sidebarVisible} />
+          <TopologyCanvas topology={topologyData} selectedNodes={selectedNodes} setSelectedNodes={setSelectedNodes}  comparisonData={comparisonData} rawTopologyData={rawTopologyData} sidebarVisible={sidebarVisible}   selectedTimestamp={selectedTimestamp}  // ✅ Nové
+  selectedCompareTimestamp={selectedCompareTimestamp} />
         </ReactFlowProvider>
       </Box>
     </div>

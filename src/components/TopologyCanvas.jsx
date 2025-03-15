@@ -22,6 +22,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DiffNavigator from './DiffNavigator';
 import yaml from 'js-yaml';
 
@@ -72,7 +73,7 @@ const getDagreLayoutedNodesAndEdges = (nodes, edges, direction = 'TB') => {
   return { nodes: layoutedNodes, edges };
 };
 
-const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, comparisonData = null, rawTopologyData, sidebarVisible  }) => {
+const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, comparisonData = null, rawTopologyData, sidebarVisible, selectedTimestamp, selectedCompareTimestamp   }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView } = useReactFlow();
@@ -81,7 +82,7 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
   const [isMinimized, setIsMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [disableDragging, setDisableDragging] = useState(false);
-
+  const [showLegend, setShowLegend] = useState(false);
   const [size, setSize] = useState({ width: 800, height: 500 });
   const sidebarWidth = sidebarVisible ? 350 : 0;
   const [position, setPosition] = useState({ x: window.innerWidth - sidebarWidth - 810, y: 5 });
@@ -153,31 +154,41 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
  // Konvertuje topológiu do YAML
  const convertToYaml = (data) => yaml.dump(data, { indent: 2 });
 
+ const prevTimestamp = useRef(null);
+ const prevCompareTimestamp = useRef(null);
+
  useEffect(() => {
   console.log("📊 comparisonData updated:", comparisonData);
   console.log("📊 rawTopologyData (base data):", rawTopologyData);
+
+  if (
+    comparisonData && rawTopologyData &&  // ✅ Comparison sa vykoná len ak existujú dáta
+    (selectedTimestamp !== prevTimestamp.current || selectedCompareTimestamp !== prevCompareTimestamp.current) // ✅ Spustí sa iba ak sa timestampy zmenia
+  ) {
+    const dmp = new DiffMatchPatch.diff_match_patch();
+    const yaml1 = convertToYaml(rawTopologyData);
+    const yaml2 = convertToYaml(comparisonData);
   
-  if (!comparisonData || !rawTopologyData) return;
+    const diff = dmp.diff_main(yaml1, yaml2);
+    dmp.diff_cleanupSemantic(diff);
+  
+    // Detect if Dark Mode is enabled
+    const isDarkMode = theme.palette.mode === 'dark';
+  
+    let formattedDiff = diff.map(([op, text]) => {
+      if (op === -1) return `<del style="background-color:${isDarkMode ? '#6e0b0b' : '#ffebe6'}; color: ${isDarkMode ? '#ff8383' : '#b00020'}; text-decoration: none;">${text}</del>`;
+      if (op === 1) return `<ins style="background-color:${isDarkMode ? '#093d09' : '#e6ffed'}; color: ${isDarkMode ? '#92ff92' : '#007500'}; text-decoration: none;">${text}</ins>`;
+      return text;
+    }).join('');
+  
+    setComparisonResult(formattedDiff);
+    setShowComparison(true);
 
-  const dmp = new DiffMatchPatch.diff_match_patch();
-  const yaml1 = convertToYaml(rawTopologyData);
-  const yaml2 = convertToYaml(comparisonData);
+    prevTimestamp.current = selectedTimestamp;
+    prevCompareTimestamp.current = selectedCompareTimestamp;
+  }
+}, [comparisonData, rawTopologyData, theme, selectedTimestamp, selectedCompareTimestamp]);
 
-  const diff = dmp.diff_main(yaml1, yaml2);
-  dmp.diff_cleanupSemantic(diff);
-
-  // Detect if Dark Mode is enabled
-  const isDarkMode = theme.palette.mode === 'dark';
-
-  let formattedDiff = diff.map(([op, text]) => {
-    if (op === -1) return `<del style="background-color:${isDarkMode ? '#6e0b0b' : '#ffebe6'}; color: ${isDarkMode ? '#ff8383' : '#b00020'}; text-decoration: none;">${text}</del>`;
-    if (op === 1) return `<ins style="background-color:${isDarkMode ? '#093d09' : '#e6ffed'}; color: ${isDarkMode ? '#92ff92' : '#007500'}; text-decoration: none;">${text}</ins>`;
-    return text;
-  }).join('');
-
-  setComparisonResult(formattedDiff);
-  setShowComparison(true);
-}, [comparisonData, rawTopologyData, theme]);
 
   const handleMouseUp = () => {
     setDisableDragging(false);
@@ -264,36 +275,73 @@ useEffect(() => {
   }
 }, [sidebarVisible, isFullscreen]);
 
+const legendStyles = {
+  backgroundColor: isDarkMode ? 'rgba(40, 40, 40, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+  color: isDarkMode ? '#fff' : '#000',
+  boxShadow: isDarkMode ? '0 2px 5px rgba(255, 255, 255, 0.2)' : '0 2px 5px rgba(0, 0, 0, 0.2)',
+  hoverBg: isDarkMode ? 'rgba(60, 60, 60, 1)' : 'rgba(235, 235, 235, 1)',
+};
+
   return (
     <div style={{ position: 'relative', height: '100%' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 10,
-          left: 10,
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          color: '#000',
-          padding: '10px 15px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
-          fontFamily: 'Arial, sans-serif',
-          fontSize: '0.875rem',
-          textAlign: 'center',
-          zIndex: theme.zIndex.appBar, 
-        }}
-      >
-        <strong style={{ display: 'block', marginBottom: '10px', fontSize: '14px' }}>Legend</strong>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          {Object.entries(typeIcons).map(([type, Icon]) => (
-            <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ color: typeColors[type], display: 'flex', alignItems: 'center', fontSize: '18px' }}>
-                {Icon}
-              </span>
-              <span>{type}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+ {!showLegend && (
+  <IconButton 
+    onClick={() => setShowLegend(true)}
+    sx={{
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      backgroundColor: legendStyles.backgroundColor,
+      color: legendStyles.color,
+      borderRadius: '50%',
+      padding: '5px',
+      boxShadow: legendStyles.boxShadow,
+      zIndex: theme.zIndex.modal + 10,
+      transition: 'background-color 0.3s ease',
+      '&:hover': { backgroundColor: legendStyles.hoverBg },
+    }}
+  >
+    <InfoOutlinedIcon />
+  </IconButton>
+)}
+
+{/* Legenda - zobrazí sa na mieste Info ikony */}
+{showLegend && (
+  <Paper
+    elevation={5}
+    sx={{
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      padding: '10px 15px',
+      borderRadius: '8px',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '0.875rem',
+      zIndex: theme.zIndex.modal + 10,
+      ...legendStyles, // Použitie dynamických štýlov pre dark mode
+    }}
+  >
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Typography variant="subtitle1" fontWeight="bold">Legend</Typography>
+      <IconButton size="small" onClick={() => setShowLegend(false)} sx={{ color: legendStyles.color }}>
+        <CloseIcon />
+      </IconButton>
+    </Box>
+
+    <Divider sx={{ my: 1, backgroundColor: isDarkMode ? '#555' : '#ccc' }} />
+
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+      {Object.entries(typeIcons).map(([type, Icon]) => (
+        <Box key={type} sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ color: typeColors[type], display: 'flex', alignItems: 'center', fontSize: '18px' }}>
+            {Icon}
+          </span>
+          <Typography variant="body2">{type}</Typography>
+        </Box>
+      ))}
+    </Box>
+  </Paper>
+)}
 
       <ReactFlow
         nodes={nodes}
@@ -435,7 +483,6 @@ useEffect(() => {
       borderRadius: '8px',
       backgroundColor: theme.palette.background.paper,
       boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
-      maxHeight: '80vh',
     }}
   >
     {/* Name */}
@@ -461,13 +508,13 @@ useEffect(() => {
  {/* UUID / URN */}
  {selectedNodeInfo.type === 'vOrg' && (
       <>
-        <Typography variant="body2">UUID: {selectedNodeInfo.details.uuid || "N/A"}</Typography>
+        <Typography variant="body2"><strong>UUID:</strong> {selectedNodeInfo.details.uuid || "N/A"}</Typography>
       </>
     )}
 
     {selectedNodeInfo.type === 'VM' && (
       <>
-        <Typography variant="body2">URN: {selectedNodeInfo.urn || "N/A"}</Typography>
+        <Typography variant="body2"><strong>URN:</strong> {selectedNodeInfo.urn || "N/A"}</Typography>
       </>
     )}
 
@@ -476,29 +523,29 @@ useEffect(() => {
     {/* Sub-object Counts (vApps, vDCs, VMs, etc.) */}
     {selectedNodeInfo.type === 'vOrg' && (
       <>
-        <Typography variant="body2">Number of vDCs: {selectedNodeInfo.details.vdcsCount || 0}</Typography>
-        <Typography variant="body2">Number of vApps: {selectedNodeInfo.details.vAppsCount || 0}</Typography>
-        <Typography variant="body2">Number of VMs: {selectedNodeInfo.details.vmCount || 0}</Typography>
+        <Typography variant="body2"><strong>Number of vDCs:</strong> {selectedNodeInfo.details.vdcsCount || 0}</Typography>
+        <Typography variant="body2"><strong>Number of vApps:</strong> {selectedNodeInfo.details.vAppsCount || 0}</Typography>
+        <Typography variant="body2"><strong>Number of VMs:</strong> {selectedNodeInfo.details.vmCount || 0}</Typography>
       </>
     )}
 
     {selectedNodeInfo.type === 'vDC' && (
       <>
-        <Typography variant="body2">Number of vApps: {selectedNodeInfo.details.vAppsCount || 0}</Typography>
-        <Typography variant="body2">Number of VMs: {selectedNodeInfo.details.vmCount || 0}</Typography>
+        <Typography variant="body2"><strong>Number of vApps:</strong> {selectedNodeInfo.details.vAppsCount || 0}</Typography>
+        <Typography variant="body2"><strong>Number of VMs:</strong> {selectedNodeInfo.details.vmCount || 0}</Typography>
       </>
     )}
 
     {selectedNodeInfo.type === 'vApp' && (
       <>
-        <Typography variant="body2">Number of VMs: {selectedNodeInfo.details.vmCount || 0}</Typography>
+        <Typography variant="body2"><strong>Number of VMs:</strong> {selectedNodeInfo.details.vmCount || 0}</Typography>
       </>
     )}
 
 {selectedNodeInfo.type === 'VM' && (
     <>
-      <Typography variant="body2">CPU: {selectedNodeInfo.details.cpu || 0}</Typography>
-      <Typography variant="body2">RAM: {selectedNodeInfo.details.ram || 0} MB</Typography>
+      <Typography variant="body2"><strong>CPU:</strong> {selectedNodeInfo.details.cpu || 0}</Typography>
+      <Typography variant="body2"><strong>RAM:</strong> {selectedNodeInfo.details.ram || 0} MB</Typography>
 
       <Divider sx={{ my: 1 }} />
 
@@ -514,11 +561,21 @@ useEffect(() => {
         <AccordionDetails>
           {selectedNodeInfo.details.networks?.map((network, index) => (
             <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
-              <Typography variant="body2">Network: {network.networkName || "N/A"}</Typography>
-              <Typography variant="body2">IP Address: {network.ipAddress || "N/A"}</Typography>
-              <Typography variant="body2">MAC Address: {network.MAC || network.directNetwork?.MAC || network.natRoutedNetwork?.MAC || "N/A"}</Typography>
-              <Typography variant="body2">Adapter: {network.adapter || "N/A"}</Typography>
-              <Typography variant="body2">Connected: {network.isConnected !== undefined ? (network.isConnected ? "Yes" : "No") : "N/A"}</Typography>
+              <Typography variant="body2">
+                <strong>Network:</strong> {network.networkName || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>IP Address:</strong> {network.ipAddress || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>MAC Address:</strong> {network.MAC || network.directNetwork?.MAC || network.natRoutedNetwork?.MAC || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Adapter:</strong> {network.adapter || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Connected:</strong> {network.isConnected !== undefined ? (network.isConnected ? "Yes" : "No") : "N/A"}
+              </Typography>
             </Box>
           ))}
         </AccordionDetails>
@@ -551,10 +608,18 @@ useEffect(() => {
         <AccordionDetails>
           {selectedNodeInfo.details.firewallRules?.map((rule, index) => (
             <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
-              <Typography variant="body2">Rule: {rule.name}</Typography>
-              <Typography variant="body2">Action: {rule.actionValue || "N/A"}</Typography>
-              <Typography variant="body2">Protocol: {rule.ipProtocol || "N/A"}</Typography>
-              <Typography variant="body2">Direction: {rule.direction || "N/A"}</Typography>
+              <Typography variant="body2">
+                <strong>Rule:</strong> {rule.name}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Action:</strong> {rule.actionValue || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Protocol:</strong> {rule.ipProtocol || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Direction:</strong> {rule.direction || "N/A"}
+              </Typography>
             </Box>
           ))}
         </AccordionDetails>
@@ -572,12 +637,24 @@ useEffect(() => {
         <AccordionDetails>
           {selectedNodeInfo.details.natRules?.filter(rule => rule.type === "SNAT").map((rule, index) => (
             <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
-              <Typography variant="body2">SNAT Rule: {rule.name}</Typography>
-              <Typography variant="body2">Description: {rule.description || "N/A"}</Typography>
-              <Typography variant="body2">External IP: {rule.externalAddresses || "N/A"}</Typography>
-              <Typography variant="body2">Internal IP: {rule.internalAddresses || "N/A"}</Typography>
-              <Typography variant="body2">Priority: {rule.priority || "N/A"}</Typography>
-              <Typography variant="body2">SNAT Destination Addresses: {rule.snatDestinationAddresses || "N/A"}</Typography>
+              <Typography variant="body2">
+                <strong>SNAT Rule:</strong> {rule.name}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Description:</strong> {rule.description || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>External IP:</strong> {rule.externalAddresses || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Internal IP:</strong> {rule.internalAddresses || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Priority:</strong> {rule.priority || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>SNAT Destination Addresses:</strong> {rule.snatDestinationAddresses || "N/A"}
+              </Typography>
             </Box>
           ))}
         </AccordionDetails>
@@ -595,11 +672,21 @@ useEffect(() => {
         <AccordionDetails>
           {selectedNodeInfo.details.natRules?.filter(rule => rule.type === "DNAT").map((rule, index) => (
             <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
-              <Typography variant="body2">DNAT Rule: {rule.name}</Typography>
-              <Typography variant="body2">Description: {rule.description || "N/A"}</Typography>
-              <Typography variant="body2">External IP: {rule.externalAddresses || "N/A"}</Typography>
-              <Typography variant="body2">Internal IP: {rule.internalAddresses || "N/A"}</Typography>
-              <Typography variant="body2">Priority: {rule.priority || "N/A"}</Typography>
+              <Typography variant="body2">
+                <strong>DNAT Rule:</strong> {rule.name}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Description:</strong> {rule.description || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>External IP:</strong> {rule.externalAddresses || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Internal IP:</strong> {rule.internalAddresses || "N/A"}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Priority:</strong> {rule.priority || "N/A"}
+              </Typography>
             </Box>
           ))}
         </AccordionDetails>
