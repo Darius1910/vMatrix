@@ -35,12 +35,20 @@ const App = () => {
               }
             />
               <Route path="/main" element={<ProtectedRoute><MainPage /></ProtectedRoute>} >
-          <Route path="cronJobs" element={<ProtectedRoute><CronJobManager /></ProtectedRoute>} />
           <Route path="dash" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="userManagement" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
           <Route path="customMode" element={<ProtectedRoute><CustomModeCanvas /></ProtectedRoute>} />
 
-        
+          <Route path="cronJobs" element={
+            <ProtectedRoute adminOnly={true}>
+              <CronJobManager />
+            </ProtectedRoute>
+          } />
+
+          <Route path="userManagement" element={
+            <ProtectedRoute adminOnly={true}>
+              <UserManagement />
+            </ProtectedRoute>
+          } />   
         </Route>
             <Route
               path="/register"

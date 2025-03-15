@@ -117,7 +117,7 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
             label: node.label,
             details: node.details || {},  
           }, 
-          style: { backgroundColor: typeColors[node.type] || '#cccccc' },
+          style: { backgroundColor: typeColors[node.type] || '#cccccc', wordBreak:'break-all' },
           position: { x: 0, y: 0 },
         });
         
@@ -499,7 +499,7 @@ const legendStyles = {
       </span>
     </Typography>
 
-    <Box sx={{ overflowY: 'auto', maxHeight: '70vh', }}>
+    <Box sx={{ overflowY: 'auto',overflowX:'hidden', wordBreak:'break-all', maxHeight: '70vh', }}>
  {/* UUID / URN */}
  {selectedNodeInfo.type === 'vOrg' && (
       <>

@@ -52,9 +52,9 @@ const MainPage = () => {
             {/* Navigačné tlačidlá */}
             {[
               { label: 'Dashboard', path: '/main/dash' },
-              { label: 'CronJobs', path: '/main/cronJobs' },
-              { label: 'Users', path: '/main/UserManagement' },
-              { label: 'Custom Mode', path: '/main/CustomMode' } // Oprava textu na jednom riadku
+              ...(user?.role === 'admin' ? [{ label: 'CronJobs', path: '/main/cronJobs' }] : []),
+              ...(user?.role === 'admin' ? [{ label: 'Users', path: '/main/UserManagement' }] : []),
+              { label: 'Custom Mode', path: '/main/CustomMode' }
             ].map(({ label, path }) => (
               <Button
                 key={path}
