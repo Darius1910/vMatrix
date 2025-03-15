@@ -16,7 +16,8 @@ import NetworkCheckOutlinedIcon from '@mui/icons-material/NetworkCheckOutlined';
 import RouterOutlinedIcon from '@mui/icons-material/RouterOutlined';
 import DiffMatchPatch from 'diff-match-patch';
 import { Rnd } from 'react-rnd';
-import { IconButton, Paper, useTheme } from '@mui/material';
+import { IconButton, Paper, useTheme, Box, Typography, Divider, Accordion, AccordionDetails, AccordionSummary } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -84,7 +85,8 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
   const [size, setSize] = useState({ width: 800, height: 500 });
   const sidebarWidth = sidebarVisible ? 350 : 0;
   const [position, setPosition] = useState({ x: window.innerWidth - sidebarWidth - 810, y: 5 });
-  
+  const [selectedNodeInfo, setSelectedNodeInfo] = useState(null);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
 
   const draggingRef = useRef(false);
   
@@ -110,10 +112,14 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
       if (selectedNodes.includes(node.id)) {
         newNodes.push({
           id: node.id,
-          data: { label: node.label }, 
+          data: { 
+            label: node.label,
+            details: node.details || {},  
+          }, 
           style: { backgroundColor: typeColors[node.type] || '#cccccc' },
           position: { x: 0, y: 0 },
         });
+        
   
         node.children?.forEach((child) => {
           if (selectedNodes.includes(child.id)) {
@@ -195,6 +201,53 @@ const TopologyCanvas = ({ topology, selectedNodes, isDarkMode = false, compariso
   setIsFullscreen(!isFullscreen);
 };
 
+const handleNodeClick = (event, node) => {
+  console.log("🔍 Clicked Node:", node);
+
+  // Extract URN from the node ID field (format: urn:vcloud:vm:<id>)
+  const urnMatch = node.id.match(/urn:vcloud:vm:([a-z0-9\-]+)/);
+  const urn = urnMatch ? urnMatch[0] : "N/A";
+
+  // Log the URN to confirm
+  console.log("🔍 Extracted URN:", urn);
+
+  let nodeType = node.type || node.data.type || "Unknown";
+
+  // Fix specific node types based on ID
+  if (node.id.includes("network")) {
+    nodeType = "Network";
+  } 
+  if (node.id.includes("edge")) {
+    nodeType = "EdgeGateway";
+  }
+  if (node.id.includes("vm")) {
+    nodeType = "VM";
+  } 
+  if (node.id.includes("vapp")) {
+    nodeType = "vApp";
+  } 
+  if (node.id.includes("vdc")) {
+    nodeType = "vDC";
+  } 
+  if (node.id.includes("org")) {
+    nodeType = "vOrg";
+  }
+
+  // Set selected node info, including the extracted URN
+  setSelectedNodeInfo({
+    id: node.id,
+    label: node.data.label,
+    type: nodeType,
+    details: node.data.details || {},
+    urn: urn,  
+  });
+
+  setIsPanelVisible(true);
+};
+
+const closePanel = () => {
+  setIsPanelVisible(false); 
+};
 
  useEffect(() => {
   document.addEventListener('mousemove', handleMouseMove);
@@ -210,7 +263,6 @@ useEffect(() => {
     setPosition({ x: window.innerWidth - (sidebarVisible ? 350 : 0) - 810, y: 5 });
   }
 }, [sidebarVisible, isFullscreen]);
-
 
   return (
     <div style={{ position: 'relative', height: '100%' }}>
@@ -248,6 +300,7 @@ useEffect(() => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeClick={handleNodeClick} 
         fitView
         minZoom={0.1}
         maxZoom={2}
@@ -367,8 +420,195 @@ useEffect(() => {
             </div>
           </Paper>
         </Rnd>
-
       )}
+
+
+{isPanelVisible && selectedNodeInfo && (
+  <Paper
+    elevation={5}
+    sx={{
+      position: 'absolute',
+      top: 20,
+      right: 20,
+      width: 320,
+      padding: '10px',
+      borderRadius: '8px',
+      backgroundColor: theme.palette.background.paper,
+      boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
+      maxHeight: '80vh',
+    }}
+  >
+    {/* Name */}
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',  }}>
+      <Typography variant="h6" sx={{ wordBreak: 'break-word' }}>
+        {selectedNodeInfo.label}
+      </Typography>
+      <IconButton onClick={closePanel} size="small">
+              <CloseIcon />
+      </IconButton>
+    </Box>
+    
+    <Divider sx={{ my: 1 }} />
+
+    {/* Node Type */}
+    <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 'bold' }}>
+      Type: <span style={{ color: typeColors[selectedNodeInfo.type] || '#000' }}>
+        {selectedNodeInfo.type || "Unknown"}
+      </span>
+    </Typography>
+
+    <Box sx={{ overflowY: 'auto', maxHeight: '70vh', }}>
+ {/* UUID / URN */}
+ {selectedNodeInfo.type === 'vOrg' && (
+      <>
+        <Typography variant="body2">UUID: {selectedNodeInfo.details.uuid || "N/A"}</Typography>
+      </>
+    )}
+
+    {selectedNodeInfo.type === 'VM' && (
+      <>
+        <Typography variant="body2">URN: {selectedNodeInfo.urn || "N/A"}</Typography>
+      </>
+    )}
+
+    <Divider sx={{ my: 1 }} />
+
+    {/* Sub-object Counts (vApps, vDCs, VMs, etc.) */}
+    {selectedNodeInfo.type === 'vOrg' && (
+      <>
+        <Typography variant="body2">Number of vDCs: {selectedNodeInfo.details.vdcsCount || 0}</Typography>
+        <Typography variant="body2">Number of vApps: {selectedNodeInfo.details.vAppsCount || 0}</Typography>
+        <Typography variant="body2">Number of VMs: {selectedNodeInfo.details.vmCount || 0}</Typography>
+      </>
+    )}
+
+    {selectedNodeInfo.type === 'vDC' && (
+      <>
+        <Typography variant="body2">Number of vApps: {selectedNodeInfo.details.vAppsCount || 0}</Typography>
+        <Typography variant="body2">Number of VMs: {selectedNodeInfo.details.vmCount || 0}</Typography>
+      </>
+    )}
+
+    {selectedNodeInfo.type === 'vApp' && (
+      <>
+        <Typography variant="body2">Number of VMs: {selectedNodeInfo.details.vmCount || 0}</Typography>
+      </>
+    )}
+
+{selectedNodeInfo.type === 'VM' && (
+    <>
+      <Typography variant="body2">CPU: {selectedNodeInfo.details.cpu || 0}</Typography>
+      <Typography variant="body2">RAM: {selectedNodeInfo.details.ram || 0} MB</Typography>
+
+      <Divider sx={{ my: 1 }} />
+
+      {/* Network(s) Accordion */}
+      <Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="panel1a-content"
+          id="panel1a-header"
+        >
+          <Typography>Network(s): {selectedNodeInfo.details.networks?.length || 0}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {selectedNodeInfo.details.networks?.map((network, index) => (
+            <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
+              <Typography variant="body2">Network: {network.networkName || "N/A"}</Typography>
+              <Typography variant="body2">IP Address: {network.ipAddress || "N/A"}</Typography>
+              <Typography variant="body2">MAC Address: {network.MAC || network.directNetwork?.MAC || network.natRoutedNetwork?.MAC || "N/A"}</Typography>
+              <Typography variant="body2">Adapter: {network.adapter || "N/A"}</Typography>
+              <Typography variant="body2">Connected: {network.isConnected !== undefined ? (network.isConnected ? "Yes" : "No") : "N/A"}</Typography>
+            </Box>
+          ))}
+        </AccordionDetails>
+      </Accordion>
+    </>
+  )}
+
+{selectedNodeInfo.type === 'Network' && (
+  <>
+    {/* General Network Information */}
+    <Typography variant="body2"><strong>IP Address:</strong> {selectedNodeInfo.details.ipAddress || "N/A"}</Typography>
+    <Typography variant="body2"><strong>MAC Address:</strong> {selectedNodeInfo.details.mac || "N/A"}</Typography>
+    <Typography variant="body2"><strong>Used IP Count:</strong> {selectedNodeInfo.details.usedIpCount || 0}</Typography>
+    <Typography variant="body2"><strong>Adapter:</strong> {selectedNodeInfo.details.adapter || "N/A"}</Typography>
+    <Typography variant="body2"><strong>Connected:</strong> {selectedNodeInfo.details.isConnected ? "Yes" : "No"}</Typography>
+  </>
+)}
+
+{selectedNodeInfo.type === 'EdgeGateway' && (
+    <>
+      {/* Firewall Rules Accordion */}
+      <Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="firewall-rules-content"
+          id="firewall-rules-header"
+        >
+          <Typography>Firewall Rules: {selectedNodeInfo.details.firewallRules?.length || 0}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {selectedNodeInfo.details.firewallRules?.map((rule, index) => (
+            <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
+              <Typography variant="body2">Rule: {rule.name}</Typography>
+              <Typography variant="body2">Action: {rule.actionValue || "N/A"}</Typography>
+              <Typography variant="body2">Protocol: {rule.ipProtocol || "N/A"}</Typography>
+              <Typography variant="body2">Direction: {rule.direction || "N/A"}</Typography>
+            </Box>
+          ))}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* SNAT Rules Accordion */}
+      <Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="snat-rules-content"
+          id="snat-rules-header"
+        >
+          <Typography>SNAT Rules: {selectedNodeInfo.details.natRules?.filter(rule => rule.type === "SNAT").length || 0}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {selectedNodeInfo.details.natRules?.filter(rule => rule.type === "SNAT").map((rule, index) => (
+            <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
+              <Typography variant="body2">SNAT Rule: {rule.name}</Typography>
+              <Typography variant="body2">Description: {rule.description || "N/A"}</Typography>
+              <Typography variant="body2">External IP: {rule.externalAddresses || "N/A"}</Typography>
+              <Typography variant="body2">Internal IP: {rule.internalAddresses || "N/A"}</Typography>
+              <Typography variant="body2">Priority: {rule.priority || "N/A"}</Typography>
+              <Typography variant="body2">SNAT Destination Addresses: {rule.snatDestinationAddresses || "N/A"}</Typography>
+            </Box>
+          ))}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* DNAT Rules Accordion */}
+      <Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="dnat-rules-content"
+          id="dnat-rules-header"
+        >
+          <Typography>DNAT Rules: {selectedNodeInfo.details.natRules?.filter(rule => rule.type === "DNAT").length || 0}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {selectedNodeInfo.details.natRules?.filter(rule => rule.type === "DNAT").map((rule, index) => (
+            <Box key={index} sx={{ mt: 1, p: 1, border: '1px solid #ddd', borderRadius: '4px' }}>
+              <Typography variant="body2">DNAT Rule: {rule.name}</Typography>
+              <Typography variant="body2">Description: {rule.description || "N/A"}</Typography>
+              <Typography variant="body2">External IP: {rule.externalAddresses || "N/A"}</Typography>
+              <Typography variant="body2">Internal IP: {rule.internalAddresses || "N/A"}</Typography>
+              <Typography variant="body2">Priority: {rule.priority || "N/A"}</Typography>
+            </Box>
+          ))}
+        </AccordionDetails>
+      </Accordion>
+    </>
+  )}
+    </Box>
+  </Paper>
+)}
     </div>
   );
 };

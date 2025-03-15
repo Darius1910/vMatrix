@@ -34,22 +34,42 @@ const DashboardPage = () => {
     console.log("Selected Topology:", selectedTopology);
   
     return selectedTopology.data.map((org, orgIndex) => ({
-      id: `org-${orgIndex}-${org.uuid}`,  // ✅ Zachovanie unikátneho ID
+      id: `org-${orgIndex}-${org.uuid}`,
       label: org.name || `vOrg-${orgIndex}`,
       type: 'vOrg',
+      details: {
+        uuid: org.uuid,
+        vdcsCount: org.vdcs?.length || 0,
+        vAppsCount: org.vdcs?.reduce((sum, vdc) => sum + (vdc.vapps?.length || 0), 0),
+        vmCount: org.vdcs?.reduce((sum, vdc) => sum + (vdc.vapps?.reduce((vSum, vApp) => vSum + (vApp.details?.VirtualMachines?.length || 0), 0)), 0),
+      },
       children: org.vdcs?.map((vdc, vdcIndex) => ({
-        id: `vdc-${orgIndex}-${vdcIndex}-${vdc.urn}`,  // ✅ Stabilné ID pre VDC
+        id: `vdc-${orgIndex}-${vdcIndex}-${vdc.urn}`,
         label: vdc.name,
         type: 'vDC',
+        details: {
+          urn: vdc.urn,
+          vAppsCount: vdc.vapps?.length || 0,
+          vmCount: vdc.vapps?.reduce((sum, vApp) => sum + (vApp.details?.VirtualMachines?.length || 0), 0),
+        },
         children: [
           ...(vdc.vapps?.map((vApp, vAppIndex) => ({
-            id: `vapp-${orgIndex}-${vdcIndex}-${vAppIndex}-${vApp.href}`,  // ✅ Stabilné ID pre vApp
+            id: `vapp-${orgIndex}-${vdcIndex}-${vAppIndex}-${vApp.href}`,
             label: vApp.name,
             type: 'vApp',
+            details: {
+              vAppName: vApp.name,
+              vmCount: vApp.details?.VirtualMachines?.length || 0,
+            },
             children: vApp.details?.VirtualMachines?.map((vm, vmIndex) => ({
-              id: `vm-${orgIndex}-${vdcIndex}-${vAppIndex}-${vmIndex}-${vm.id}`,  // ✅ Unikátne ID pre VM
+              id: `vm-${orgIndex}-${vdcIndex}-${vAppIndex}-${vmIndex}-${vm.id}`,
               label: vm.name,
               type: 'VM',
+              details: {
+                cpu: vm.details?.numCpu || 0,
+                ram: vm.details?.RAM || 0,
+                networks: vm.networks || [],
+              },
               children: vm.networks?.map((network, networkIndex) => {
                 const networkId = `network-${orgIndex}-${vdcIndex}-${vAppIndex}-${vmIndex}-${networkIndex}-${network.networkName}`;
                 const edgeGatewayNode = network.networkType === "NAT_ROUTED" && network.natRoutedNetwork
@@ -57,13 +77,25 @@ const DashboardPage = () => {
                       id: `edge-${networkId}-${network.natRoutedNetwork.edgeGatewayName}`,
                       label: network.natRoutedNetwork.edgeGatewayName || 'Edge Gateway',
                       type: 'EdgeGateway',
+                      details: {
+                        firewallRules: network.natRoutedNetwork.firewallRules || [],
+                        natRules: network.natRoutedNetwork.natRules || [],
+                      }
                     }
                   : null;
   
                 return {
-                  id: networkId,  // ✅ Unikátne ID pre sieť
+                  id: networkId,
                   label: network.networkName,
                   type: 'Network',
+                  details: {
+                    networkType: network.networkType || "UNKNOWN",
+                    ipAddress: network.ipAddress || "N/A",
+                    mac: network.MAC || "N/A",
+                    usedIpCount: network.usedIpCount || 0,
+                    adapter: network.adapter || "N/A",
+                    isConnected: network.isConnected !== undefined ? network.isConnected : "N/A", 
+                  },
                   children: edgeGatewayNode ? [edgeGatewayNode] : [],
                 };
               }),
@@ -71,9 +103,15 @@ const DashboardPage = () => {
           })) || []),
   
           ...(vdc.edgeGateways || []).map((edgeGateway, edgeGatewayIndex) => ({
-            id: `edgeGateway-${orgIndex}-${vdcIndex}-${edgeGatewayIndex}-${edgeGateway.edgeGatewayName}`,  // ✅ Unikátne ID pre EdgeGateway
+            id: `edgeGateway-${orgIndex}-${vdcIndex}-${edgeGatewayIndex}-${edgeGateway.edgeGatewayName}`,
             label: edgeGateway.edgeGatewayName || `Edge Gateway ${edgeGatewayIndex}`,
             type: 'EdgeGateway',
+            details: {
+              firewallRules: edgeGateway.firewallRules || [],
+              natRules: edgeGateway.natRules || [],
+              externalIPs: edgeGateway.externalAddresses || "N/A",
+              internalIPs: edgeGateway.internalAddresses || "N/A",
+            },
           })),
         ],
       })) || [],
@@ -127,6 +165,8 @@ const DashboardPage = () => {
               mac: network.MAC || "N/A",
               adapter: network.adapter || "N/A",
               networkType: network.networkType || "UNKNOWN",
+              adapter: network.adapter || "N/A",
+              isConnected: network.isConnected !== undefined ? network.isConnected : "N/A", 
               edgeGateway: network.networkType === "NAT_ROUTED" && network.natRoutedNetwork
                 ? {
                     id: `edge-${network.natRoutedNetwork.edgeGatewayName}`,
